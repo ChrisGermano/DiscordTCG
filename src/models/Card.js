@@ -22,7 +22,7 @@ const cardSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    VFEC: {
+    special: {
         type: Boolean,
         default: null
     },

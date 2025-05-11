@@ -70,7 +70,7 @@ async function execute(interaction) {
             userCollection.cards.push({
                 cardId: newCard[0]._id,
                 quantity: 1,
-                VFEC: config.canGenerateSpecialCards() && Math.random() < config.vfecChance
+                special: config.canGenerateSpecialCards() && Math.random() < config.specialChance
             });
         }
 
@@ -85,7 +85,7 @@ async function execute(interaction) {
 
         const newCardName = userCollection.cards.find(c => 
             c.cardId._id.toString() === newCard[0]._id.toString()
-        ).VFEC ? `${config.specialPrefix} ${newCard[0].name}` : newCard[0].name;
+        ).special ? `${config.specialPrefix} ${newCard[0].name}` : newCard[0].name;
 
         let response = `**Trade Up Successful!**\n\n`;
         response += `Traded 5x ${currentCard.name} for:\n`;

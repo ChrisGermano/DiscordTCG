@@ -52,15 +52,15 @@ async function execute(interaction) {
             });
         }
 
-        const cardVFECStatus = new Map();
+        const cardSpecialStatus = new Map();
 
         for (const card of allCards) {
-            const isVFEC = config.canGenerateSpecialCards() && Math.random() < config.vfecChance;
-            cardVFECStatus.set(card._id.toString(), isVFEC);
+            const isSpecial = config.canGenerateSpecialCards() && Math.random() < config.specialChance;
+            cardSpecialStatus.set(card._id.toString(), isSpecial);
             
             const existingCard = userCollection.cards.find(c => 
                 c.cardId.toString() === card._id.toString() && 
-                c.VFEC === isVFEC
+                c.special === isSpecial
             );
 
             if (existingCard) {
@@ -69,7 +69,7 @@ async function execute(interaction) {
                 userCollection.cards.push({
                     cardId: card._id,
                     quantity: 1,
-                    VFEC: isVFEC
+                    special: isSpecial
                 });
             }
         }
@@ -85,8 +85,8 @@ async function execute(interaction) {
                 rare: '🔵',
                 legendary: '🟣'
             }[card.rarity];
-            const isVFEC = cardVFECStatus.get(card._id.toString());
-            const cardName = isVFEC ? `${config.specialPrefix} ${card.name}` : card.name;
+            const isSpecial = cardSpecialStatus.get(card._id.toString());
+            const cardName = isSpecial ? `${config.specialPrefix} ${card.name}` : card.name;
             response += `${rarityEmoji} ${cardName}\n`;
             response += `*${card.description}*\n`;
             response += `Set: **${card.set}**\n\n`;

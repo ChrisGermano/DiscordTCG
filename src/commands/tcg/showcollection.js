@@ -25,7 +25,7 @@ async function execute(interaction) {
             if (!rarityGroups[rarity]) {
                 rarityGroups[rarity] = [];
             }
-            const cardName = card.VFEC ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name;
+            const cardName = card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name;
             rarityGroups[rarity].push({
                 name: cardName,
                 quantity: card.quantity,
