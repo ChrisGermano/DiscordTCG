@@ -66,3 +66,43 @@ SPECIAL_CHANCE=0.1
 LEGENDARY_CHANCE=0.01
 SPECIAL_PREFIX=Shiny
 ```
+
+## Discord Bot Setup
+
+### 1. Create a Discord Application
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and give it a name
+3. Navigate to the "Bot" tab and click "Add Bot"
+4. Under the bot's username, click "Reset Token" to get your bot token (save this for your `.env` file)
+
+### 2. Configure Bot Permissions
+1. Go to the "OAuth2" tab in your application
+2. Select "URL Generator" from the sidebar
+3. Under "Scopes", select:
+   - `bot`
+   - `applications.commands`
+4. Under "Bot Permissions", select:
+   - `Send Messages`
+   - `Use Slash Commands`
+5. Copy the generated URL at the bottom of the page
+
+### 3. Invite the Bot
+1. Open the generated URL in a new browser tab
+2. Select your server from the dropdown
+3. Click "Authorize"
+4. Complete the CAPTCHA if prompted
+
+### 4. Get Required IDs
+1. Enable Developer Mode in Discord (User Settings > Advanced > Developer Mode)
+2. Right-click your server and select "Copy Server ID" (for `GUILD_ID` if using guild-specific commands)
+3. Right-click your user profile and select "Copy User ID" (for `ADMIN_USER_ID`)
+
+### 5. Final Setup
+1. Create a `.env` file in the project root
+2. Add your bot token and other environment variables
+3. Run `npm run deploy` to register slash commands
+4. Start the bot with `npm start`
+
+Note: The bot requires the following Discord permissions to function:
+- `Send Messages`: To send card information and responses
+- `Use Slash Commands`: To register and use the TCG commands
