@@ -1,0 +1,18 @@
+{
+  "name": "discord-tcg",
+  "version": "0.1.0",
+  "description": "A bot framework for building your own TCG on Discord",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/scripts/deployCommands.js"
+  },
+  "dependencies": {
+    "discord.js": "^13.16.0",
+    "@discordjs/rest": "^0.5.0",
+    "@discordjs/builders": "^0.15.0",
+    "discord-api-types": "^0.37.64",
+    "dotenv": "^16.3.1",
+    "mongoose": "^8.0.3"
+  }
+}
