@@ -23,13 +23,11 @@ async function execute(interaction) {
         const opponent = interaction.options.getUser('opponent');
         const cardName = interaction.options.getString('card');
 
-        // Prevent self-battles
         if (opponent.id === interaction.user.id) {
             await interaction.editReply('You cannot challenge yourself to a battle!');
             return;
         }
 
-        // Check if either user is in an active battle
         const activeBattle = await Battle.findOne({
             $or: [
                 { challengerId: interaction.user.id, status: { $in: ['pending', 'in_progress'] } },
@@ -44,7 +42,6 @@ async function execute(interaction) {
             return;
         }
 
-        // Get challenger's card
         const challengerCollection = await UserCollection.findOne({ userId: interaction.user.id })
             .populate('cards.cardId');
         
@@ -63,7 +60,6 @@ async function execute(interaction) {
             return;
         }
 
-        // Get defender's collection to verify they have cards
         const defenderCollection = await UserCollection.findOne({ userId: opponent.id })
             .populate('cards.cardId');
 
@@ -72,7 +68,6 @@ async function execute(interaction) {
             return;
         }
 
-        // Create the battle
         const battle = new Battle({
             challengerId: interaction.user.id,
             defenderId: opponent.id,
@@ -82,7 +77,6 @@ async function execute(interaction) {
 
         await battle.save();
 
-        // Send challenge message
         const challengeEmbed = {
             color: 0x0099ff,
             title: 'Card Battle Challenge!',

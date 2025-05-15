@@ -42,7 +42,7 @@ async function execute(interaction) {
         ]);
 
         const allCards = [...commonCards, ...uncommonCard, ...rareOrLegendary];
-
+        
         let userCollection = await UserCollection.findOne({ userId: interaction.user.id });
         
         if (!userCollection) {

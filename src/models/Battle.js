@@ -72,11 +72,10 @@ const battleSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: 3600 // Automatically delete battles after 1 hour
+        expires: 3600
     }
 });
 
-// Ensure users can't have multiple active battles
 battleSchema.index({ challengerId: 1, status: 1 }, { 
     partialFilterExpression: { status: { $in: ['pending', 'in_progress'] } }
 });
