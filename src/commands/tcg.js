@@ -6,6 +6,8 @@ const tradeupCommand = require('./tcg/tradeup');
 const givecurrencyCommand = require('./tcg/givecurrency');
 const resetcollectionsCommand = require('./tcg/resetcollections');
 const createCardCommand = require('./tcg/createCard');
+const battleCommand = require('./tcg/battle');
+const acceptCommand = require('./tcg/accept');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -17,7 +19,9 @@ module.exports = {
         .addSubcommand(tradeupCommand.data)
         .addSubcommand(givecurrencyCommand.data)
         .addSubcommand(resetcollectionsCommand.data)
-        .addSubcommand(createCardCommand.data),
+        .addSubcommand(createCardCommand.data)
+        .addSubcommand(battleCommand.data)
+        .addSubcommand(acceptCommand.data),
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
@@ -43,6 +47,12 @@ module.exports = {
                 break;
             case 'createcard':
                 await createCardCommand.execute(interaction);
+                break;
+            case 'battle':
+                await battleCommand.execute(interaction);
+                break;
+            case 'accept':
+                await acceptCommand.execute(interaction);
                 break;
             default:
                 await interaction.reply('Unknown subcommand.');

@@ -9,9 +9,10 @@ const userCreditsSchema = new mongoose.Schema({
     },
     credits: {
         type: Number,
-        default: config.defaultCredits
+        required: true,
+        default: 0
     },
-    lastWaterDrink: {
+    lastEarnTime: {
         type: Date,
         default: null
     }

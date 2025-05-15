@@ -17,17 +17,17 @@ async function execute(interaction) {
         }
 
         const now = new Date();
-        const cooldownTime = config.drinkWaterCooldown;
+        const cooldownTime = config.earnCooldown;
 
-        if (userCredits.lastWaterDrink && (now - userCredits.lastWaterDrink) < cooldownTime) {
-            const timeLeft = cooldownTime - (now - userCredits.lastWaterDrink);
+        if (userCredits.lastEarnTime && (now - userCredits.lastEarnTime) < cooldownTime) {
+            const timeLeft = cooldownTime - (now - userCredits.lastEarnTime);
             const hoursLeft = Math.ceil(timeLeft / (60 * 60 * 1000));
             await interaction.editReply(`You need to wait ${hoursLeft} more hour(s) before earning again.`);
             return;
         }
 
         userCredits.credits += 1;
-        userCredits.lastWaterDrink = now;
+        userCredits.lastEarnTime = now;
         await userCredits.save();
 
         await interaction.editReply(`You earned 1 ${config.currencyName.slice(0, -1)}! You now have ${userCredits.credits} ${config.currencyName}.`);

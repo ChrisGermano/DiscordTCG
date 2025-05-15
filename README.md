@@ -45,13 +45,13 @@ Create a `.env` file in the root directory with the following variables:
 - `ADMIN_USER_ID` - Discord user ID of the bot's admin
 
 ### Optional Variables
-- `CURRENCY_NAME` - Name of the virtual currency
-- `DEFAULT_CREDITS` - Starting currency amount for new users
-- `PACK_COST` - Cost to open a card pack
-- `DRINK_WATER_COOLDOWN` - Cooldown for earning currency in milliseconds (default: 43200000, 12 hours)
+- `CURRENCY_NAME` - Name of the virtual currency (default: "Vladbucks")
+- `DEFAULT_CREDITS` - Starting currency amount for new users (default: 10)
+- `PACK_COST` - Cost to open a card pack (default: 5)
+- `EARN_COOLDOWN` - Cooldown for earning currency in milliseconds (default: 43200000, 12 hours)
 - `SPECIAL_CHANCE` - Chance to generate a special variant card (default: 0.1, 10%)
 - `LEGENDARY_CHANCE` - Chance to get a legendary card in a pack (default: 0.01, 1%)
-- `SPECIAL_PREFIX` - Prefix for special variant cards
+- `SPECIAL_PREFIX` - Prefix for special variant cards (default: null, disabled)
 
 Example `.env` file:
 ```env
@@ -61,7 +61,7 @@ ADMIN_USER_ID=
 CURRENCY_NAME=Moneybucks
 DEFAULT_CREDITS=10
 PACK_COST=5
-DRINK_WATER_COOLDOWN=43200000
+EARN_COOLDOWN=43200000
 SPECIAL_CHANCE=0.1
 LEGENDARY_CHANCE=0.01
 SPECIAL_PREFIX=Shiny
