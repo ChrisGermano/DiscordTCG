@@ -1,311 +1,228 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
+const { MessageEmbed } = require('discord.js');
 const Battle = require('../../models/Battle');
-const UserCollection = require('../../models/UserCollection');
 const Card = require('../../models/Card');
-const config = require('../../config/config');
+const UserCollection = require('../../models/UserCollection');
 
-// Battle effect probabilities based on rarity
-const EFFECT_CHANCES = {
-    common: {
-        critical_hit: 0.05,
-        defense_boost: 0.10,
-        power_steal: 0.00,
-        double_power: 0.00,
-        shield: 0.05
-    },
-    uncommon: {
-        critical_hit: 0.10,
-        defense_boost: 0.15,
-        power_steal: 0.05,
-        double_power: 0.00,
-        shield: 0.10
-    },
-    rare: {
-        critical_hit: 0.15,
-        defense_boost: 0.20,
-        power_steal: 0.10,
-        double_power: 0.05,
-        shield: 0.15
-    },
-    legendary: {
-        critical_hit: 0.20,
-        defense_boost: 0.25,
-        power_steal: 0.15,
-        double_power: 0.10,
-        shield: 0.20
-    }
+const BATTLE_EFFECTS = {
+    common: { probability: 0.3, effects: ['power_boost', 'power_reduction'] },
+    uncommon: { probability: 0.4, effects: ['power_boost', 'power_reduction', 'heal'] },
+    rare: { probability: 0.5, effects: ['power_boost', 'power_reduction', 'heal', 'shield'] },
+    legendary: { probability: 0.6, effects: ['power_boost', 'power_reduction', 'heal', 'shield', 'double_power'] },
+    fused: { probability: 0.7, effects: ['power_boost', 'power_reduction', 'heal', 'shield', 'double_power', 'fusion_boost'] }
 };
 
-// Effect multipliers
 const EFFECT_MULTIPLIERS = {
-    critical_hit: 2.0,
-    defense_boost: 1.5,
-    power_steal: 1.3,
-    double_power: 2.0,
-    shield: 0.5,
-    none: 1.0
+    power_boost: { min: 1.1, max: 1.3 },
+    power_reduction: { min: 0.7, max: 0.9 },
+    heal: { min: 0.8, max: 1.2 },
+    shield: { min: 0.9, max: 1.1 },
+    double_power: { min: 1.8, max: 2.2 },
+    fusion_boost: { min: 1.5, max: 1.8 }
 };
 
-function getRandomEffects(card) {
-    const effects = [];
-    const chances = EFFECT_CHANCES[card.rarity];
+function getRandomEffect(card) {
+    const rarity = card.rarity.toLowerCase();
+    const effectConfig = BATTLE_EFFECTS[rarity];
     
-    // Special cards get an additional effect
-    const maxEffects = card.special ? 2 : 1;
-    
-    for (const [effect, chance] of Object.entries(chances)) {
-        if (Math.random() < chance && effects.length < maxEffects) {
-            effects.push(effect);
-        }
+    if (!effectConfig || Math.random() > effectConfig.probability) {
+        return null;
     }
-    
-    return effects.length > 0 ? effects : ['none'];
+
+    if (card.special) {
+        const allEffects = Object.keys(EFFECT_MULTIPLIERS);
+        return allEffects[Math.floor(Math.random() * allEffects.length)];
+    }
+
+    return effectConfig.effects[Math.floor(Math.random() * effectConfig.effects.length)];
 }
 
-function calculateBattlePower(basePower, effects, opponentEffects) {
-    let power = basePower;
-    let defense = 0;
-    
-    // Apply own effects
-    for (const effect of effects) {
-        switch (effect) {
-            case 'critical_hit':
-                power *= EFFECT_MULTIPLIERS.critical_hit;
-                break;
-            case 'defense_boost':
-                defense += basePower * (EFFECT_MULTIPLIERS.defense_boost - 1);
-                break;
-            case 'power_steal':
-                power *= EFFECT_MULTIPLIERS.power_steal;
-                break;
-            case 'double_power':
-                power *= EFFECT_MULTIPLIERS.double_power;
-                break;
-            case 'shield':
-                defense += basePower * (1 - EFFECT_MULTIPLIERS.shield);
-                break;
-        }
+function applyEffect(power, effect, isOwnEffect = true) {
+    if (!effect) return power;
+
+    const multiplier = EFFECT_MULTIPLIERS[effect];
+    if (!multiplier) return power;
+
+    let effectPower = power * (Math.random() * (multiplier.max - multiplier.min) + multiplier.min);
+
+    if (effect === 'power_reduction' && isOwnEffect) {
+        effectPower = power * 0.5;
     }
-    
-    // Apply opponent's effects that affect us
-    for (const effect of opponentEffects) {
-        if (effect === 'power_steal') {
-            power *= (2 - EFFECT_MULTIPLIERS.power_steal);
-        }
-    }
-    
-    // Add some randomness (±20%)
-    const randomFactor = 0.8 + (Math.random() * 0.4);
-    power = Math.floor((power + defense) * randomFactor);
-    
+
+    const randomVariation = 0.8 + Math.random() * 0.4;
+    return Math.round(effectPower * randomVariation);
+}
+
+function calculateBattlePower(card, ownEffect, opponentEffect) {
+    let power = card.power;
+
+    power = applyEffect(power, ownEffect, true);
+    power = applyEffect(power, opponentEffect, false);
+
     return power;
-}
-
-function determineRoundWinner(challengerPower, defenderPower) {
-    const totalPower = challengerPower + defenderPower;
-    const challengerRoll = Math.random() * totalPower;
-    return challengerRoll < challengerPower ? 'challenger' : 'defender';
 }
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('accept')
-    .setDescription('Accept a pending battle challenge')
-    .addStringOption(option =>
-        option.setName('card')
-            .setDescription('The card to use in battle')
-            .setRequired(true));
+    .setDescription('Accept a battle challenge');
 
 async function execute(interaction) {
     await interaction.deferReply();
 
+    const userId = interaction.user.id;
+
     try {
-        const cardName = interaction.options.getString('card');
-
-        // Find pending battle where user is defender
-        const battle = await Battle.findOne({
-            defenderId: interaction.user.id,
+        const pendingBattle = await Battle.findOne({
+            defenderId: userId,
             status: 'pending'
-        }).populate('challengerCardId');
-
-        if (!battle) {
-            await interaction.editReply('You don\'t have any pending battle challenges!');
-            return;
-        }
-
-        // Get defender's card
-        const defenderCollection = await UserCollection.findOne({ userId: interaction.user.id })
-            .populate('cards.cardId');
-        
-        const defenderCard = defenderCollection.cards.find(c => 
-            c.cardId.name.toLowerCase() === cardName.toLowerCase() && 
-            c.quantity > 0
-        );
-
-        if (!defenderCard) {
-            await interaction.editReply(`You don't have "${cardName}" in your collection!`);
-            return;
-        }
-
-        // Update battle with defender's card and start it
-        battle.defenderCardId = defenderCard.cardId._id;
-        battle.status = 'in_progress';
-        await battle.save();
-
-        // Get challenger's collection for card transfer
-        const challengerCollection = await UserCollection.findOne({ userId: battle.challengerId })
-            .populate('cards.cardId');
-
-        const challengerCard = challengerCollection.cards.find(c => 
-            c.cardId._id.toString() === battle.challengerCardId.toString()
-        ).cardId;
-
-        // Battle loop for best of three
-        let roundResults = [];
-        while (battle.currentRound <= 3 && 
-               battle.challengerWins < 2 && 
-               battle.defenderWins < 2) {
-            
-            // Get effects for this round
-            const challengerEffects = getRandomEffects(challengerCard);
-            const defenderEffects = getRandomEffects(defenderCard.cardId);
-            
-            // Calculate battle powers
-            const challengerPower = calculateBattlePower(
-                challengerCard.power,
-                challengerEffects,
-                defenderEffects
-            );
-            
-            const defenderPower = calculateBattlePower(
-                defenderCard.cardId.power,
-                defenderEffects,
-                challengerEffects
-            );
-            
-            // Determine round winner
-            const roundWinner = determineRoundWinner(challengerPower, defenderPower);
-            
-            // Update battle stats
-            if (roundWinner === 'challenger') {
-                battle.challengerWins++;
-            } else {
-                battle.defenderWins++;
-            }
-            
-            // Record round
-            battle.rounds.push({
-                roundNumber: battle.currentRound,
-                challengerPower,
-                defenderPower,
-                challengerEffects,
-                defenderEffects,
-                winner: roundWinner
-            });
-            
-            battle.currentRound++;
-            await battle.save();
-            
-            roundResults.push({
-                round: battle.currentRound - 1,
-                challengerPower,
-                defenderPower,
-                challengerEffects,
-                defenderEffects,
-                winner: roundWinner
-            });
-        }
-
-        // Determine final winner
-        battle.winnerId = battle.challengerWins > battle.defenderWins ? 
-            battle.challengerId : battle.defenderId;
-        battle.status = 'completed';
-        await battle.save();
-
-        // Transfer card from loser to winner
-        const winnerCollection = await UserCollection.findOne({ userId: battle.winnerId });
-        const loserCollection = await UserCollection.findOne({ 
-            userId: battle.winnerId === battle.challengerId ? 
-                battle.defenderId : battle.challengerId 
         });
 
-        const loserCard = battle.winnerId === battle.challengerId ? 
-            defenderCard.cardId : challengerCard;
-
-        // Remove card from loser
-        const loserCardEntry = loserCollection.cards.find(c => 
-            c.cardId.toString() === loserCard._id.toString()
-        );
-        loserCardEntry.quantity -= 1;
-        if (loserCardEntry.quantity === 0) {
-            loserCollection.cards = loserCollection.cards.filter(c => c !== loserCardEntry);
+        if (!pendingBattle) {
+            return interaction.editReply('You don\'t have any pending battles to accept.');
         }
-        await loserCollection.save();
 
-        // Add card to winner
-        const winnerCardEntry = winnerCollection.cards.find(c => 
-            c.cardId.toString() === loserCard._id.toString()
-        );
-        if (winnerCardEntry) {
-            winnerCardEntry.quantity += 1;
-        } else {
-            winnerCollection.cards.push({
-                cardId: loserCard._id,
-                quantity: 1,
-                special: false // Keep the card as non-special when transferred
+        const defenderCollection = await UserCollection.findOne({ userId });
+        if (!defenderCollection) {
+            return interaction.editReply('You don\'t have any cards in your collection.');
+        }
+
+        const defenderCard = defenderCollection.cards.find(c => c.cardId.toString() === pendingBattle.defenderCardId.toString());
+        if (!defenderCard) {
+            return interaction.editReply('The card you selected for battle is no longer in your collection.');
+        }
+
+        const populatedDefenderCard = await Card.findById(defenderCard.cardId);
+        if (!populatedDefenderCard) {
+            return interaction.editReply('Error: Could not find your battle card in the database.');
+        }
+
+        pendingBattle.defenderCard = {
+            cardId: defenderCard.cardId,
+            power: populatedDefenderCard.power,
+            rarity: populatedDefenderCard.rarity,
+            special: defenderCard.special
+        };
+        pendingBattle.status = 'active';
+        await pendingBattle.save();
+
+        const challengerCollection = await UserCollection.findOne({ userId: pendingBattle.challengerId });
+        if (!challengerCollection) {
+            return interaction.editReply('Error: Challenger\'s collection not found.');
+        }
+
+        const challengerCard = challengerCollection.cards.find(c => c.cardId.toString() === pendingBattle.challengerCardId.toString());
+        if (!challengerCard) {
+            return interaction.editReply('Error: Challenger\'s battle card not found.');
+        }
+
+        const populatedChallengerCard = await Card.findById(challengerCard.cardId);
+        if (!populatedChallengerCard) {
+            return interaction.editReply('Error: Could not find challenger\'s battle card in the database.');
+        }
+
+        let challengerWins = 0;
+        let defenderWins = 0;
+        const rounds = [];
+
+        for (let round = 1; round <= 3; round++) {
+            const challengerEffect = getRandomEffect(populatedChallengerCard);
+            const defenderEffect = getRandomEffect(populatedDefenderCard);
+
+            const challengerPower = calculateBattlePower(populatedChallengerCard, challengerEffect, defenderEffect);
+            const defenderPower = calculateBattlePower(populatedDefenderCard, defenderEffect, challengerEffect);
+
+            const roundWinner = challengerPower > defenderPower ? 'challenger' : 'defender';
+            if (roundWinner === 'challenger') challengerWins++;
+            else defenderWins++;
+
+            pendingBattle.rounds.push({
+                round,
+                challengerPower,
+                defenderPower,
+                challengerEffect,
+                defenderEffect,
+                winner: roundWinner
             });
-        }
-        await winnerCollection.save();
 
-        // Create battle results embed
-        let resultEmbed = {
-            color: 0x00ff00,
-            title: 'Battle Results!',
-            description: 'The battle has concluded!',
-            fields: [
-                {
-                    name: 'Challenger\'s Card',
-                    value: `${challengerCard.name}\nPower: ${challengerCard.power}\nRarity: ${challengerCard.rarity}`
-                },
-                {
-                    name: 'Defender\'s Card',
-                    value: `${defenderCard.cardId.name}\nPower: ${defenderCard.cardId.power}\nRarity: ${defenderCard.cardId.rarity}`
-                }
-            ],
-            timestamp: new Date()
+            rounds.push({
+                round,
+                challengerPower,
+                defenderPower,
+                challengerEffect,
+                defenderEffect,
+                winner: roundWinner
+            });
+
+            if (challengerWins >= 2 || defenderWins >= 2) break;
+        }
+
+        const finalWinner = challengerWins > defenderWins ? 'challenger' : 'defender';
+        pendingBattle.winner = finalWinner;
+        pendingBattle.status = 'completed';
+        await pendingBattle.save();
+
+        const loserCollection = finalWinner === 'challenger' ? defenderCollection : challengerCollection;
+        const winnerCollection = finalWinner === 'challenger' ? challengerCollection : defenderCollection;
+        const losingCard = finalWinner === 'challenger' ? defenderCard : challengerCard;
+
+        const cardToTransfer = {
+            cardId: losingCard.cardId,
+            quantity: 1,
+            special: false
         };
 
-        // Add round details
-        roundResults.forEach((round, index) => {
-            const challengerEffectsText = round.challengerEffects
-                .map(effect => effect.replace('_', ' ').toUpperCase())
-                .join(', ');
-            const defenderEffectsText = round.defenderEffects
-                .map(effect => effect.replace('_', ' ').toUpperCase())
-                .join(', ');
+        const cardIndex = loserCollection.cards.findIndex(c => c.cardId.toString() === losingCard.cardId.toString());
+        if (cardIndex === -1) {
+            return interaction.editReply('Error: Could not find the losing card in the collection.');
+        }
 
-            resultEmbed.fields.push({
+        loserCollection.cards[cardIndex].quantity--;
+        if (loserCollection.cards[cardIndex].quantity <= 0) {
+            loserCollection.cards.splice(cardIndex, 1);
+        }
+
+        const existingCard = winnerCollection.cards.find(c => c.cardId.toString() === losingCard.cardId.toString());
+        if (existingCard) {
+            existingCard.quantity++;
+        } else {
+            winnerCollection.cards.push(cardToTransfer);
+        }
+
+        await Promise.all([
+            loserCollection.save(),
+            winnerCollection.save()
+        ]);
+
+        const embed = new MessageEmbed()
+            .setColor('#FFD700')
+            .setTitle('🏆 Battle Results 🏆')
+            .setDescription(`Battle between ${interaction.client.users.cache.get(pendingBattle.challengerId)?.username || 'Challenger'} and ${interaction.user.username} has concluded!`)
+            .addFields(
+                { name: 'Winner', value: finalWinner === 'challenger' ? interaction.client.users.cache.get(pendingBattle.challengerId)?.username || 'Challenger' : interaction.user.username, inline: true },
+                { name: 'Score', value: `${challengerWins}-${defenderWins}`, inline: true }
+            );
+
+        for (const round of rounds) {
+            const challengerEffectText = round.challengerEffect ? `\nEffect: ${round.challengerEffect}` : '';
+            const defenderEffectText = round.defenderEffect ? `\nEffect: ${round.defenderEffect}` : '';
+            
+            embed.addFields({
                 name: `Round ${round.round}`,
-                value: `Challenger: ${round.challengerPower} power (${challengerEffectsText})\n` +
-                       `Defender: ${round.defenderPower} power (${defenderEffectsText})\n` +
-                       `Winner: ${round.winner.toUpperCase()}`
+                value: `Challenger: ${round.challengerPower}${challengerEffectText}\nDefender: ${round.defenderPower}${defenderEffectText}\nWinner: ${round.winner === 'challenger' ? interaction.client.users.cache.get(pendingBattle.challengerId)?.username || 'Challenger' : interaction.user.username}`
             });
+        }
+
+        embed.addFields({
+            name: 'Card Transfer',
+            value: `The losing card has been transferred to ${finalWinner === 'challenger' ? interaction.client.users.cache.get(pendingBattle.challengerId)?.username || 'Challenger' : interaction.user.username}'s collection.`
         });
 
-        // Add final result
-        resultEmbed.fields.push({
-            name: 'Final Result',
-            value: `<@${battle.winnerId}> has won the battle ${battle.challengerWins}-${battle.defenderWins} and claimed ${loserCard.name}!`
-        });
-
-        await interaction.editReply({ embeds: [resultEmbed] });
+        await interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
-        console.error('Error in /tcg accept command:', error);
-        await interaction.editReply('There was an error processing the battle. Please try again later.');
+        console.error('Error in accept command:', error);
+        await interaction.editReply('An error occurred while processing the battle.');
     }
 }
 
-module.exports = {
-    data,
-    execute
-}; 
+module.exports = { data, execute }; 

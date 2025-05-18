@@ -1,39 +1,35 @@
 const mongoose = require('mongoose');
-const UserCredits = require('../models/UserCredits');
 require('dotenv').config();
 
-async function migrate() {
-    try {
-        // Connect to MongoDB
-        await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
-        console.log('Connected to MongoDB');
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
+    });
 
-        // Update all documents
-        const result = await UserCredits.updateMany(
-            { lastWaterDrink: { $exists: true } },
-            [
-                {
-                    $set: {
-                        lastEarnTime: '$lastWaterDrink',
-                        lastWaterDrink: '$$REMOVE'
-                    }
-                }
-            ]
+async function migrateLastWaterDrink() {
+    try {
+        const UserCollection = require('../models/UserCollection');
+        const Card = require('../models/Card');
+
+        const waterDrinkCard = await Card.findOne({ name: 'Water Drink' });
+        if (!waterDrinkCard) {
+            console.log('Water Drink card not found in database');
+            return;
+        }
+
+        const result = await UserCollection.updateMany(
+            { 'cards.cardId': waterDrinkCard._id },
+            { $set: { 'cards.$.lastUsed': new Date(0) } }
         );
 
-        console.log(`Migration completed. Updated ${result.modifiedCount} documents.`);
-        console.log('Migration details:', result);
-
+        console.log(`Updated ${result.modifiedCount} collections`);
     } catch (error) {
-        console.error('Migration failed:', error);
+        console.error('Migration error:', error);
     } finally {
-        await mongoose.disconnect();
-        console.log('Disconnected from MongoDB');
+        await mongoose.connection.close();
     }
 }
 
-// Run the migration
-migrate(); 
+migrateLastWaterDrink(); 

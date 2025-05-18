@@ -7,7 +7,7 @@ const cardSchema = new mongoose.Schema({
     },
     rarity: {
         type: String,
-        enum: ['common', 'uncommon', 'rare', 'legendary'],
+        enum: ['common', 'uncommon', 'rare', 'legendary', 'fused'],
         required: true
     },
     imageUrl: {

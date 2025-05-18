@@ -4,7 +4,13 @@ const path = require('path');
 function loadCommands(client) {
     const commandsPath = path.join(__dirname);
     const commandFiles = fs.readdirSync(commandsPath)
-        .filter(file => file.endsWith('.js') && file !== 'commandLoader.js' && file !== 'tcg.js');
+        .filter(file => {
+            const filePath = path.join(commandsPath, file);
+            return file.endsWith('.js') && 
+                   file !== 'commandLoader.js' && 
+                   file !== 'tcg.js' &&
+                   fs.statSync(filePath).isFile();
+        });
 
     for (const file of commandFiles) {
         const filePath = path.join(commandsPath, file);

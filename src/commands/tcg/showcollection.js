@@ -1,65 +1,103 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
+const { MessageEmbed } = require('discord.js');
 const UserCollection = require('../../models/UserCollection');
 const Card = require('../../models/Card');
+const FusedCard = require('../../models/FusedCard');
 const config = require('../../config/config');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('showcollection')
-    .setDescription('Show your card collection');
+    .setDescription('Display your card collection');
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
+
+    const userId = interaction.user.id;
 
     try {
-        const userCollection = await UserCollection.findOne({ userId: interaction.user.id })
+        const userCollection = await UserCollection.findOne({ userId })
             .populate('cards.cardId');
 
         if (!userCollection || userCollection.cards.length === 0) {
-            await interaction.editReply('Your collection is empty. Use `/tcg open` to get some cards!');
-            return;
+            return interaction.editReply('Your collection is empty.');
         }
 
-        const rarityGroups = {};
+        const processedCards = [];
+        const rarityGroups = {
+            common: { emoji: '⚪', cards: [] },
+            uncommon: { emoji: '🟢', cards: [] },
+            rare: { emoji: '🔵', cards: [] },
+            legendary: { emoji: '🟣', cards: [] },
+            fused: { emoji: '✨', cards: [] },
+            unknown: { emoji: '❓', cards: [] }
+        };
+
         for (const card of userCollection.cards) {
-            const rarity = card.cardId.rarity;
-            if (!rarityGroups[rarity]) {
-                rarityGroups[rarity] = [];
-            }
-            const cardName = card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name;
-            rarityGroups[rarity].push({
-                name: cardName,
-                quantity: card.quantity,
+            if (!card.cardId) continue;
+
+            let cardInfo = {
+                name: card.cardId.name,
                 description: card.cardId.description,
-                set: card.cardId.set
-            });
+                power: card.cardId.power,
+                set: card.cardId.set,
+                quantity: card.quantity,
+                special: card.special
+            };
+
+            if (card.cardId.rarity === 'fused') {
+                try {
+                    const fusedCard = await FusedCard.findById(card.cardId._id)
+                        .populate('parentCards.cardId');
+
+                    if (fusedCard) {
+                        const parentInfo = fusedCard.parentCards
+                            .filter(p => p.cardId)
+                            .map(p => `${p.cardId.name} (${p.quantity} used)`)
+                            .join(' + ');
+
+                        cardInfo.description = fusedCard.description;
+                        cardInfo.set = 'Fusion';
+                        cardInfo.fusionInfo = `Fused from: ${parentInfo}`;
+                    }
+                } catch (error) {
+                    console.error('Error populating fused card:', error);
+                }
+            }
+
+            const rarity = card.cardId.rarity?.toLowerCase() || 'unknown';
+            const group = rarityGroups[rarity] || rarityGroups.unknown;
+            group.cards.push(cardInfo);
         }
 
-        let response = `**${interaction.user.username}'s Collection:**\n\n`;
-        
-        for (const rarity of ['common', 'uncommon', 'rare', 'legendary']) {
-            if (rarityGroups[rarity].length > 0) {
-                response += `**${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cards:**\n`;
-                response += rarityGroups[rarity].map(card => {
-                    const rarityEmoji = {
-                        common: '⚪',
-                        uncommon: '🟢',
-                        rare: '🔵',
-                        legendary: '🟣'
-                    }[rarity];
-                    return `${rarityEmoji} ${card.name} (x${card.quantity})\n*${card.description}*\nSet: **${card.set}**\n`;
-                }).join('\n') + '\n\n';
+        const embed = new MessageEmbed()
+            .setColor('#FFD700')
+            .setTitle(`${interaction.user.username}'s Collection`)
+            .setDescription('Here are all the cards in your collection:')
+            .setTimestamp();
+
+        const displayOrder = ['common', 'uncommon', 'rare', 'legendary', 'fused', 'unknown'];
+        for (const rarity of displayOrder) {
+            const group = rarityGroups[rarity];
+            if (group.cards.length > 0) {
+                const cardList = group.cards.map(card => {
+                    const specialMark = card.special ? '🌟 ' : '';
+                    const fusionInfo = card.fusionInfo ? `\n${card.fusionInfo}` : '';
+                    return `${specialMark}${group.emoji} **${card.name}** (${card.quantity}x) - Power: ${card.power}\n${card.description}${fusionInfo}`;
+                }).join('\n\n');
+
+                embed.addField(
+                    `${group.emoji} ${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Cards`,
+                    cardList || 'No cards in this category.'
+                );
             }
         }
 
-        await interaction.editReply(response);
+        await interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
-        console.error('Error in /tcg showcollection command:', error);
-        await interaction.editReply('There was an error showing your collection. Please try again later.');
+        console.error('Error in showcollection command:', error);
+        await interaction.editReply('An error occurred while fetching your collection.');
     }
 }
 
-module.exports = {
-    data,
-    execute
-}; 
+module.exports = { data, execute }; 
