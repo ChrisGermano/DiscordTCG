@@ -38,7 +38,7 @@ function generateFusedName(name1, name2) {
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('fuse')
-    .setDescription('Fuse two cards to create a unique variant. Names are intelligently combined to avoid repetition (e.g., "Fire Dragon" + "Ice Dragon" = "Fire Ice Dragon")')
+    .setDescription('Fuse two cards to create a unique variant.')
     .addStringOption(option =>
         option.setName('card1')
             .setDescription('Name of the first card to fuse')

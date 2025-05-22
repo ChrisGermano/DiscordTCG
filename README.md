@@ -77,6 +77,65 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
   - Trade cancellations
 - Clear error messages for invalid trades
 
+#### Trade Examples
+```
+# Offer a trade
+/tcg trade offer cards:"Card1, Card2" for:"Card3" user:@username
+
+# Accept a trade
+/tcg trade accept trade_id:"123e4567-e89b-12d3-a456-426614174000"
+
+# Cancel a trade
+/tcg trade cancel trade_id:"123e4567-e89b-12d3-a456-426614174000"
+```
+
+#### Common Issues and Solutions
+1. **Invalid String Length Error**
+   - Card names must be between 1 and 100 characters
+   - Use exact card names as shown in your collection
+   - Avoid special characters in card names
+   - Example of correct format: `"Card Name"` or `"Card1, Card2"`
+
+2. **Trade Not Found**
+   - Verify the trade ID is correct
+   - Trade IDs are case-sensitive
+   - Check if the trade was already completed or cancelled
+   - Ensure you're using the trade ID from the most recent trade offer
+
+3. **Cannot Send Trade Offer**
+   - Target user must be in the same server
+   - Target user must have DMs enabled
+   - Target user must not have blocked the bot
+   - Try using the user's mention (@username) format
+
+4. **Trade Cancelled Automatically**
+   - Cards must be available in both users' collections
+   - Cards cannot be part of another pending trade
+   - Special cards cannot be traded
+   - Check your collection with `/tcg showcollection` before trading
+
+5. **Rate Limit Reached**
+   - Wait 60 seconds between trade attempts
+   - Maximum 3 trades per minute
+   - The cooldown timer will be shown in the error message
+
+#### Best Practices
+1. **Before Trading**
+   - Use `/tcg showcollection` to verify card names and quantities
+   - Ensure you have enough copies of cards you want to trade
+   - Check that the target user is online and can receive DMs
+
+2. **During Trading**
+   - Use exact card names as shown in your collection
+   - Keep track of trade IDs for reference
+   - Respond to trade offers promptly
+   - Cancel unwanted trades to free up cards
+
+3. **After Trading**
+   - Verify your collection was updated correctly
+   - Keep trade IDs until the trade is completed
+   - Report any issues to server administrators
+
 ### Technical Stack
 - Node.js with Discord.js v13
 - MongoDB for data persistence
