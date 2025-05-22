@@ -10,6 +10,16 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
 - Card attributes: name, rarity, image, description, set, power
 - Card collection management with quantity tracking
 
+### Trading System
+- Direct card trading between users
+- Trade validation and safety checks
+- Rate limiting to prevent spam
+- Transaction safety for trade execution
+- Support for multi-card trades
+- Trade status tracking (pending/completed/cancelled)
+- Automatic trade notifications
+- Protection against invalid trades and special cards
+
 ### Economy
 - Virtual currency system
 - Pack opening system with configurable costs
@@ -23,6 +33,49 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
 - `/tcg createcard` - Admin command to create new cards
 - `/tcg givecurrency` - Admin command to manage currency
 - `/tcg resetcollections` - Admin command to reset game state
+- `/tcg trade` - Trade cards with other users
+  - `/tcg trade offer <cards> <for> <user>` - Offer a trade to another user
+  - `/tcg trade accept <trade_id>` - Accept a trade offer
+  - `/tcg trade cancel <trade_id>` - Cancel a trade offer
+
+### Trading System Details
+
+#### Trade Limits
+- Maximum 10 cards per trade
+- Rate limit: 3 trades per minute
+- Special cards cannot be traded
+- Cards must be in the same server
+- Users must be able to receive DMs
+
+#### Trade Safety Features
+- Transaction-based trade execution
+- Validation of card ownership and quantities
+- Prevention of double-trading cards
+- Automatic trade cancellation if cards become unavailable
+- Server membership verification
+- DM permission checking
+
+#### Trade Flow
+1. User initiates trade with `/tcg trade offer`
+   - Specifies cards to trade and receive
+   - Selects target user
+   - System validates card ownership and quantities
+2. Target user receives trade offer via DM
+3. Target user can:
+   - Accept trade with `/tcg trade accept`
+   - Cancel trade with `/tcg trade cancel`
+4. System executes trade atomically
+   - Updates both users' collections
+   - Sends confirmation to both users
+   - Records trade completion
+
+#### Trade Notifications
+- Trade offers are sent via DM
+- Both users receive notifications for:
+  - Trade offers
+  - Trade completions
+  - Trade cancellations
+- Clear error messages for invalid trades
 
 ### Technical Stack
 - Node.js with Discord.js v13
