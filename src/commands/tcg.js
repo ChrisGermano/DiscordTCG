@@ -12,6 +12,7 @@ const helpCommand = require('./tcg/help');
 const viewCommand = require('./tcg/view');
 const profileCommand = require('./tcg/profile');
 const fuseCommand = require('./tcg/fuse');
+const tradeCommand = require('./tcg/trade');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -29,53 +30,73 @@ module.exports = {
         .addSubcommand(helpCommand.data)
         .addSubcommand(viewCommand.data)
         .addSubcommand(profileCommand.data)
-        .addSubcommand(fuseCommand.data),
+        .addSubcommand(fuseCommand.data)
+        .addSubcommandGroup(group =>
+            group
+                .setName('trade')
+                .setDescription('Trade cards with other users')
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('offer')
+                        .setDescription('Offer a trade to another user')
+                        .addStringOption(option =>
+                            option.setName('cards')
+                                .setDescription('Cards you want to trade (comma-separated)')
+                                .setRequired(true))
+                        .addStringOption(option =>
+                            option.setName('for')
+                                .setDescription('Cards you want in return (comma-separated)')
+                                .setRequired(true))
+                        .addUserOption(option =>
+                            option.setName('user')
+                                .setDescription('User to trade with')
+                                .setRequired(true)))
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('accept')
+                        .setDescription('Accept a trade offer')
+                        .addStringOption(option =>
+                            option.setName('trade_id')
+                                .setDescription('ID of the trade to accept')
+                                .setRequired(true)))
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName('cancel')
+                        .setDescription('Cancel a trade offer')
+                        .addStringOption(option =>
+                            option.setName('trade_id')
+                                .setDescription('ID of the trade to cancel')
+                                .setRequired(true)))),
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
+        const subcommandGroup = interaction.options.getSubcommandGroup();
 
-        switch (subcommand) {
-            case 'open':
-                await openCommand.execute(interaction);
-                break;
-            case 'showcollection':
-                await showcollectionCommand.execute(interaction);
-                break;
-            case 'earn':
-                await earnCommand.execute(interaction);
-                break;
-            case 'tradeup':
-                await tradeupCommand.execute(interaction);
-                break;
-            case 'givecurrency':
-                await givecurrencyCommand.execute(interaction);
-                break;
-            case 'resetcollections':
-                await resetcollectionsCommand.execute(interaction);
-                break;
-            case 'createcard':
-                await createCardCommand.execute(interaction);
-                break;
-            case 'battle':
-                await battleCommand.execute(interaction);
-                break;
-            case 'accept':
-                await acceptCommand.execute(interaction);
-                break;
-            case 'help':
-                await helpCommand.execute(interaction);
-                break;
-            case 'view':
-                await viewCommand.execute(interaction);
-                break;
-            case 'profile':
-                await profileCommand.execute(interaction);
-                break;
-            case 'fuse':
-                await fuseCommand.execute(interaction);
-                break;
-            default:
-                await interaction.reply('Unknown subcommand.');
+        // If this is a trade command (has subcommand group 'trade')
+        if (subcommandGroup === 'trade') {
+            await tradeCommand.execute(interaction);
+            return;
+        }
+
+        // Handle all other commands
+        const command = {
+            'open': openCommand,
+            'showcollection': showcollectionCommand,
+            'earn': earnCommand,
+            'tradeup': tradeupCommand,
+            'givecurrency': givecurrencyCommand,
+            'resetcollections': resetcollectionsCommand,
+            'createcard': createCardCommand,
+            'battle': battleCommand,
+            'accept': acceptCommand,
+            'help': helpCommand,
+            'view': viewCommand,
+            'profile': profileCommand,
+            'fuse': fuseCommand
+        }[subcommand];
+
+        if (command) {
+            await command.execute(interaction);
         }
     }
 }; 

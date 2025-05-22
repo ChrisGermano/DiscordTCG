@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
 const Trade = require('../../models/Trade');
 const Card = require('../../models/Card');
@@ -116,41 +116,9 @@ async function validateCards(userId, cardNames, quantities = {}) {
     return { valid: true, cards: validatedCards };
 }
 
-const data = new SlashCommandBuilder()
+const data = new SlashCommandSubcommandBuilder()
     .setName('trade')
-    .setDescription('Trade cards with other users')
-    .addSubcommand(subcommand =>
-        subcommand
-            .setName('offer')
-            .setDescription('Offer a trade to another user')
-            .addStringOption(option =>
-                option.setName('cards')
-                    .setDescription('Cards you want to trade (comma-separated)')
-                    .setRequired(true))
-            .addStringOption(option =>
-                option.setName('for')
-                    .setDescription('Cards you want in return (comma-separated)')
-                    .setRequired(true))
-            .addUserOption(option =>
-                option.setName('user')
-                    .setDescription('User to trade with')
-                    .setRequired(true)))
-    .addSubcommand(subcommand =>
-        subcommand
-            .setName('accept')
-            .setDescription('Accept a trade offer')
-            .addStringOption(option =>
-                option.setName('trade_id')
-                    .setDescription('ID of the trade to accept')
-                    .setRequired(true)))
-    .addSubcommand(subcommand =>
-        subcommand
-            .setName('cancel')
-            .setDescription('Cancel a trade offer')
-            .addStringOption(option =>
-                option.setName('trade_id')
-                    .setDescription('ID of the trade to cancel')
-                    .setRequired(true)));
+    .setDescription('Trade cards with other users');
 
 async function execute(interaction) {
     await interaction.deferReply();
@@ -362,6 +330,10 @@ async function execute(interaction) {
                 const otherUserId = trade.initiatorId === userId ? trade.targetId : trade.initiatorId;
                 await interaction.client.users.cache.get(otherUserId)?.send({ embeds: [embed] });
                 break;
+            }
+            default: {
+                await interaction.editReply('Invalid trade subcommand. Use `/tcg help trade` to see available options.');
+                return;
             }
         }
     } catch (error) {

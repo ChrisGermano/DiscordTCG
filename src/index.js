@@ -20,20 +20,34 @@ mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Load commands
-const commandFiles = fs.readdirSync(path.join(__dirname, 'commands'))
-    .filter(file => file.endsWith('.js') && file !== 'commandLoader.js');
-
-for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-    if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
+// Recursive function to load commands from directories
+function loadCommands(dir) {
+    const files = fs.readdirSync(dir);
+    
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        
+        if (stat.isDirectory()) {
+            // Recursively load commands from subdirectories
+            loadCommands(filePath);
+        } else if (file.endsWith('.js') && file !== 'commandLoader.js') {
+            const command = require(filePath);
+            if ('data' in command && 'execute' in command) {
+                client.commands.set(command.data.name, command);
+                console.log(`Loaded command: ${command.data.name}`);
+            }
+        }
     }
 }
+
+// Load all commands
+loadCommands(path.join(__dirname, 'commands'));
 
 // Bot ready event
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
+    console.log(`Loaded ${client.commands.size} commands`);
 });
 
 // Interaction handling

@@ -35,20 +35,58 @@ const COMMANDS = {
         description: 'View your collection statistics and card breakdown',
         usage: '/tcg profile',
         example: '/tcg profile'
+    },
+    trade: {
+        description: 'Trade cards with other users',
+        usage: '/tcg trade offer <cards> <for> <user>',
+        example: '/tcg trade offer "Card1, Card2" "Card3" @user',
+        subcommands: {
+            'offer': {
+                description: 'Offer a trade to another user',
+                usage: '/tcg trade offer <cards> <for> <user>',
+                example: '/tcg trade offer "Card1, Card2" "Card3" @user'
+            },
+            'accept': {
+                description: 'Accept a trade offer',
+                usage: '/tcg trade accept <trade_id>',
+                example: '/tcg trade accept "123e4567-e89b-12d3-a456-426614174000"'
+            },
+            'cancel': {
+                description: 'Cancel a trade offer',
+                usage: '/tcg trade cancel <trade_id>',
+                example: '/tcg trade cancel "123e4567-e89b-12d3-a456-426614174000"'
+            }
+        }
     }
 };
 
 async function execute(interaction) {
     try {
-        const fields = Object.entries(COMMANDS).map(([command, info]) => ({
-            name: command,
-            value: [
+        const fields = Object.entries(COMMANDS).map(([command, info]) => {
+            let value = [
                 `**Description:** ${info.description}`,
                 `**Usage:** \`${info.usage}\``,
                 `**Example:** \`${info.example}\``
-            ].join('\n'),
-            inline: false
-        }));
+            ];
+
+            if (info.subcommands) {
+                value.push('\n**Subcommands:**');
+                Object.entries(info.subcommands).forEach(([subcmd, subinfo]) => {
+                    value.push(
+                        `\n**${subcmd}**`,
+                        `Description: ${subinfo.description}`,
+                        `Usage: \`${subinfo.usage}\``,
+                        `Example: \`${subinfo.example}\``
+                    );
+                });
+            }
+
+            return {
+                name: command,
+                value: value.join('\n'),
+                inline: false
+            };
+        });
 
         const embed = {
             color: 0x0099FF,

@@ -6,17 +6,32 @@ require('dotenv').config();
 
 const commands = [];
 const commandsPath = path.join(__dirname, '..', 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    if ('data' in command && 'execute' in command) {
-        commands.push(command.data.toJSON());
-    } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+// Recursive function to load commands from directories
+function loadCommands(dir) {
+    const files = fs.readdirSync(dir);
+    
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        
+        if (stat.isDirectory()) {
+            // Recursively load commands from subdirectories
+            loadCommands(filePath);
+        } else if (file.endsWith('.js') && file !== 'commandLoader.js') {
+            const command = require(filePath);
+            if ('data' in command && 'execute' in command) {
+                commands.push(command.data.toJSON());
+                console.log(`Loaded command: ${command.data.name}`);
+            } else {
+                console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+            }
+        }
     }
 }
+
+// Load all commands
+loadCommands(commandsPath);
 
 const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 
