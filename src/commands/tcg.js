@@ -31,46 +31,53 @@ module.exports = {
         .addSubcommand(viewCommand.data)
         .addSubcommand(profileCommand.data)
         .addSubcommand(fuseCommand.data)
-        .addSubcommandGroup(group =>
-            group
-                .setName('trade')
-                .setDescription('Trade cards with other users')
-                .addSubcommand(subcommand =>
-                    subcommand
-                        .setName('offer')
-                        .setDescription('Offer a trade to another user')
-                        .addStringOption(option =>
-                            option.setName('cards')
-                                .setDescription('Cards you want to trade (comma-separated)')
-                                .setRequired(true))
-                        .addStringOption(option =>
-                            option.setName('for')
-                                .setDescription('Cards you want in return (comma-separated)')
-                                .setRequired(true))
-                        .addUserOption(option =>
-                            option.setName('user')
-                                .setDescription('User to trade with')
-                                .setRequired(true)))
-                .addSubcommand(subcommand =>
-                    subcommand
-                        .setName('accept')
-                        .setDescription('Accept a trade offer')
-                        .addStringOption(option =>
-                            option.setName('trade_id')
-                                .setDescription('ID of the trade to accept')
-                                .setRequired(true)))
-                .addSubcommand(subcommand =>
-                    subcommand
-                        .setName('cancel')
-                        .setDescription('Cancel a trade offer')
-                        .addStringOption(option =>
-                            option.setName('trade_id')
-                                .setDescription('ID of the trade to cancel')
-                                .setRequired(true)))),
+        .addSubcommandGroup(group => group
+            .setName('trade')
+            .setDescription('Trade cards with other users')
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('offer')
+                    .setDescription('Offer a trade to another user')
+                    .addStringOption(option =>
+                        option.setName('cards')
+                            .setDescription('Cards you want to trade (comma-separated)')
+                            .setRequired(true))
+                    .addStringOption(option =>
+                        option.setName('for')
+                            .setDescription('Cards you want in return (comma-separated)')
+                            .setRequired(true))
+                    .addUserOption(option =>
+                        option.setName('user')
+                            .setDescription('User to trade with')
+                            .setRequired(true)))
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('accept')
+                    .setDescription('Accept a trade offer')
+                    .addStringOption(option =>
+                        option.setName('trade_id')
+                            .setDescription('ID of the trade to accept')
+                            .setRequired(true)))
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('cancel')
+                    .setDescription('Cancel a trade offer')
+                    .addStringOption(option =>
+                        option.setName('trade_id')
+                            .setDescription('ID of the trade to cancel')
+                            .setRequired(true)))),
 
     async execute(interaction) {
-        const subcommand = interaction.options.getSubcommand();
-        const subcommandGroup = interaction.options.getSubcommandGroup();
+        let subcommand, subcommandGroup;
+        
+        try {
+            subcommand = interaction.options.getSubcommand();
+            subcommandGroup = interaction.options.getSubcommandGroup();
+        } catch (error) {
+            // If there's no subcommand, this is a direct command
+            subcommand = interaction.commandName;
+            subcommandGroup = null;
+        }
 
         // If this is a trade command (has subcommand group 'trade')
         if (subcommandGroup === 'trade') {

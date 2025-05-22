@@ -1,4 +1,4 @@
-const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
 const Trade = require('../../models/Trade');
 const Card = require('../../models/Card');
@@ -116,54 +116,83 @@ async function validateCards(userId, cardNames, quantities = {}) {
     return { valid: true, cards: validatedCards };
 }
 
-const data = new SlashCommandSubcommandBuilder()
-    .setName('trade')
-    .setDescription('Trade cards with other users');
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('trade')
+        .setDescription('Trade cards with other users')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('offer')
+                .setDescription('Offer a trade to another user')
+                .addStringOption(option =>
+                    option.setName('cards')
+                        .setDescription('Cards you want to trade (comma-separated)')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('for')
+                        .setDescription('Cards you want in return (comma-separated)')
+                        .setRequired(true))
+                .addUserOption(option =>
+                    option.setName('user')
+                        .setDescription('User to trade with')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('accept')
+                .setDescription('Accept a trade offer')
+                .addStringOption(option =>
+                    option.setName('trade_id')
+                        .setDescription('ID of the trade to accept')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('cancel')
+                .setDescription('Cancel a trade offer')
+                .addStringOption(option =>
+                    option.setName('trade_id')
+                        .setDescription('ID of the trade to cancel')
+                        .setRequired(true))),
 
-async function execute(interaction) {
-    await interaction.deferReply();
+    async execute(interaction) {
+        const subcommand = interaction.options.getSubcommand();
 
-    const subcommand = interaction.options.getSubcommand();
-    const userId = interaction.user.id;
-
-    try {
         switch (subcommand) {
             case 'offer': {
-                const rateLimit = checkRateLimit(userId);
+                const rateLimit = checkRateLimit(interaction.user.id);
                 if (!rateLimit.allowed) {
-                    return interaction.editReply(
+                    return interaction.reply(
                         `You're trading too quickly. Please wait ${rateLimit.timeLeft} seconds before trying again.`
                     );
                 }
 
                 const targetUser = interaction.options.getUser('user');
-                if (targetUser.id === userId) {
-                    return interaction.editReply('You cannot trade with yourself.');
+                if (targetUser.id === interaction.user.id) {
+                    return interaction.reply('You cannot trade with yourself.');
                 }
 
                 const permissionsCheck = await validateTradePermissions(interaction, targetUser);
                 if (!permissionsCheck.valid) {
-                    return interaction.editReply(permissionsCheck.message);
+                    return interaction.reply(permissionsCheck.message);
                 }
 
                 const cardsToTrade = interaction.options.getString('cards');
                 const cardsToReceive = interaction.options.getString('for');
 
                 const [initiatorValidation, targetValidation] = await Promise.all([
-                    validateCards(userId, cardsToTrade),
+                    validateCards(interaction.user.id, cardsToTrade),
                     validateCards(targetUser.id, cardsToReceive)
                 ]);
 
                 if (!initiatorValidation.valid) {
-                    return interaction.editReply(initiatorValidation.message);
+                    return interaction.reply(initiatorValidation.message);
                 }
                 if (!targetValidation.valid) {
-                    return interaction.editReply(`Target user ${targetValidation.message}`);
+                    return interaction.reply(`Target user ${targetValidation.message}`);
                 }
 
                 const trade = new Trade({
                     tradeId: uuidv4(),
-                    initiatorId: userId,
+                    initiatorId: interaction.user.id,
                     targetId: targetUser.id,
                     initiatorCards: initiatorValidation.cards,
                     targetCards: targetValidation.cards
@@ -182,7 +211,7 @@ async function execute(interaction) {
                     )
                     .setTimestamp();
 
-                await interaction.editReply({ embeds: [embed] });
+                await interaction.reply({ embeds: [embed] });
                 await targetUser.send({ embeds: [embed] });
                 break;
             }
@@ -200,7 +229,7 @@ async function execute(interaction) {
                             throw new Error('Trade offer not found or already processed.');
                         }
 
-                        if (trade.targetId !== userId) {
+                        if (trade.targetId !== interaction.user.id) {
                             throw new Error('This trade offer is not for you.');
                         }
 
@@ -223,7 +252,7 @@ async function execute(interaction) {
 
                         if (!initiatorValidation.valid || !targetValidation.valid) {
                             trade.status = 'cancelled';
-                            trade.cancelledBy = userId;
+                            trade.cancelledBy = interaction.user.id;
                             await trade.save({ session });
                             throw new Error('Trade cancelled: Cards are no longer available.');
                         }
@@ -288,7 +317,7 @@ async function execute(interaction) {
                         )
                         .setTimestamp();
 
-                    await interaction.editReply({ embeds: [embed] });
+                    await interaction.reply({ embeds: [embed] });
                     await interaction.client.users.cache.get(trade.initiatorId)?.send({ embeds: [embed] });
 
                 } catch (error) {
@@ -305,15 +334,15 @@ async function execute(interaction) {
                 const trade = await Trade.findOne({ tradeId, status: 'pending' });
 
                 if (!trade) {
-                    return interaction.editReply('Trade offer not found or already processed.');
+                    return interaction.reply('Trade offer not found or already processed.');
                 }
 
-                if (trade.initiatorId !== userId && trade.targetId !== userId) {
-                    return interaction.editReply('You cannot cancel this trade offer.');
+                if (trade.initiatorId !== interaction.user.id && trade.targetId !== interaction.user.id) {
+                    return interaction.reply('You cannot cancel this trade offer.');
                 }
 
                 trade.status = 'cancelled';
-                trade.cancelledBy = userId;
+                trade.cancelledBy = interaction.user.id;
                 await trade.save();
 
                 const embed = new MessageEmbed()
@@ -326,21 +355,17 @@ async function execute(interaction) {
                     )
                     .setTimestamp();
 
-                await interaction.editReply({ embeds: [embed] });
-                const otherUserId = trade.initiatorId === userId ? trade.targetId : trade.initiatorId;
+                await interaction.reply({ embeds: [embed] });
+                const otherUserId = trade.initiatorId === interaction.user.id ? trade.targetId : trade.initiatorId;
                 await interaction.client.users.cache.get(otherUserId)?.send({ embeds: [embed] });
                 break;
             }
             default: {
-                await interaction.editReply('Invalid trade subcommand. Use `/tcg help trade` to see available options.');
-                return;
+                await interaction.reply({
+                    content: 'Invalid trade subcommand. Use `/tcg help` to see available options.',
+                    ephemeral: true
+                });
             }
         }
-    } catch (error) {
-        console.error('Error in trade command:', error);
-        const errorMessage = error.message || 'An error occurred while processing the trade.';
-        await interaction.editReply(errorMessage);
     }
-}
-
-module.exports = { data, execute }; 
+}; 
