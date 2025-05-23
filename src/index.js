@@ -20,29 +20,10 @@ mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Recursive function to load commands from directories
-function loadCommands(dir) {
-    const files = fs.readdirSync(dir);
-    
-    for (const file of files) {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-        
-        if (stat.isDirectory()) {
-            // Recursively load commands from subdirectories
-            loadCommands(filePath);
-        } else if (file.endsWith('.js') && file !== 'commandLoader.js') {
-            const command = require(filePath);
-            if ('data' in command && 'execute' in command) {
-                client.commands.set(command.data.name, command);
-                console.log(`Loaded command: ${command.data.name}`);
-            }
-        }
-    }
-}
-
-// Load all commands
-loadCommands(path.join(__dirname, 'commands'));
+// Load the TCG command
+const tcgCommand = require('./commands/tcg');
+client.commands.set(tcgCommand.data.name, tcgCommand);
+console.log(`Loaded command: ${tcgCommand.data.name}`);
 
 // Bot ready event
 client.once('ready', () => {
@@ -54,13 +35,21 @@ client.once('ready', () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) return;
 
+    console.log(`Received command: ${interaction.commandName}`);
+    console.log('Command options:', interaction.options._hoistedOptions);
+
     const command = client.commands.get(interaction.commandName);
-    if (!command) return;
+    if (!command) {
+        console.log(`Command not found: ${interaction.commandName}`);
+        return;
+    }
 
     try {
+        console.log(`Executing command: ${interaction.commandName}`);
         await command.execute(interaction);
+        console.log(`Successfully executed command: ${interaction.commandName}`);
     } catch (error) {
-        console.error(error);
+        console.error(`Error executing command ${interaction.commandName}:`, error);
         const errorMessage = { content: 'There was an error executing this command.', ephemeral: true };
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp(errorMessage);

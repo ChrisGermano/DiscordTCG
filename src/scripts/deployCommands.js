@@ -7,37 +7,19 @@ require('dotenv').config();
 const commands = [];
 const commandsPath = path.join(__dirname, '..', 'commands');
 
-// Recursive function to load commands from directories
-function loadCommands(dir) {
-    const files = fs.readdirSync(dir);
-    
-    for (const file of files) {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-        
-        if (stat.isDirectory()) {
-            // Recursively load commands from subdirectories
-            loadCommands(filePath);
-        } else if (file.endsWith('.js') && file !== 'commandLoader.js') {
-            const command = require(filePath);
-            if ('data' in command && 'execute' in command) {
-                commands.push(command.data.toJSON());
-                console.log(`Loaded command: ${command.data.name}`);
-            } else {
-                console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-            }
-        }
-    }
-}
-
-// Load all commands
-loadCommands(commandsPath);
+// Load the TCG command
+const tcgCommand = require(path.join(commandsPath, 'tcg'));
+commands.push(tcgCommand.data.toJSON());
+console.log(`Loaded command: ${tcgCommand.data.name}`);
 
 const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
     try {
         console.log('Started refreshing application (/) commands.');
+
+        // Log the command structure for debugging
+        console.log('Command structure:', JSON.stringify(commands[0], null, 2));
 
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
@@ -46,6 +28,6 @@ const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 
         console.log('Successfully reloaded application (/) commands.');
     } catch (error) {
-        console.error(error);
+        console.error('Error deploying commands:', error);
     }
 })(); 

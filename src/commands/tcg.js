@@ -4,7 +4,7 @@ const showcollectionCommand = require('./tcg/showcollection');
 const earnCommand = require('./tcg/earn');
 const tradeupCommand = require('./tcg/tradeup');
 const givecurrencyCommand = require('./tcg/givecurrency');
-const resetcollectionsCommand = require('./tcg/resetcollections');
+const resetCommand = require('./tcg/reset');
 const createCardCommand = require('./tcg/createCard');
 const battleCommand = require('./tcg/battle');
 const acceptCommand = require('./tcg/accept');
@@ -23,7 +23,7 @@ module.exports = {
         .addSubcommand(earnCommand.data)
         .addSubcommand(tradeupCommand.data)
         .addSubcommand(givecurrencyCommand.data)
-        .addSubcommand(resetcollectionsCommand.data)
+        .addSubcommand(resetCommand.data)
         .addSubcommand(createCardCommand.data)
         .addSubcommand(battleCommand.data)
         .addSubcommand(acceptCommand.data)
@@ -68,21 +68,42 @@ module.exports = {
                             .setRequired(true)))),
 
     async execute(interaction) {
-        let subcommand, subcommandGroup;
+        console.log('TCG command received');
+        console.log('Raw options:', interaction.options);
+        console.log('Options data:', interaction.options.data);
+        console.log('Hoisted options:', interaction.options._hoistedOptions);
+        
+        let subcommand;
+        let subcommandGroup;
         
         try {
+            // First try to get the subcommand
             subcommand = interaction.options.getSubcommand();
-            subcommandGroup = interaction.options.getSubcommandGroup();
+            console.log('Subcommand name:', subcommand);
+            
+            // Only try to get subcommand group if it exists
+            try {
+                subcommandGroup = interaction.options.getSubcommandGroup();
+                console.log('Subcommand group:', subcommandGroup);
+            } catch (error) {
+                // If no subcommand group exists, that's fine - just set it to null
+                subcommandGroup = null;
+                console.log('No subcommand group found');
+            }
+            
+            console.log(`Subcommand: ${subcommand}, Group: ${subcommandGroup}`);
         } catch (error) {
-            // If there's no subcommand, this is a direct command
-            subcommand = interaction.commandName;
-            subcommandGroup = null;
+            console.error('Error getting subcommand:', error);
+            return await interaction.reply({
+                content: 'Please use a valid subcommand. Use `/tcg help` to see available commands.',
+                ephemeral: true
+            });
         }
 
         // If this is a trade command (has subcommand group 'trade')
         if (subcommandGroup === 'trade') {
-            await tradeCommand.execute(interaction);
-            return;
+            console.log('Executing trade command');
+            return await tradeCommand.execute(interaction);
         }
 
         // Handle all other commands
@@ -92,7 +113,7 @@ module.exports = {
             'earn': earnCommand,
             'tradeup': tradeupCommand,
             'givecurrency': givecurrencyCommand,
-            'resetcollections': resetcollectionsCommand,
+            'reset': resetCommand,
             'createcard': createCardCommand,
             'battle': battleCommand,
             'accept': acceptCommand,
@@ -103,7 +124,15 @@ module.exports = {
         }[subcommand];
 
         if (command) {
-            await command.execute(interaction);
+            console.log(`Executing subcommand: ${subcommand}`);
+            console.log('Command options before execution:', interaction.options);
+            return await command.execute(interaction);
+        } else {
+            console.log(`Unknown subcommand: ${subcommand}`);
+            return await interaction.reply({
+                content: `Unknown subcommand: ${subcommand}. Use \`/tcg help\` to see available commands.`,
+                ephemeral: true
+            });
         }
     }
 }; 
