@@ -17,35 +17,34 @@ module.exports = {
                 .setMinValue(1)),
 
     async execute(interaction) {
-        // Check if user has admin permissions
-        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({
-                content: '❌ You do not have permission to use this command.',
-                ephemeral: true
-            });
-        }
-
-        console.log('Command options:', interaction.options._hoistedOptions);
-
-        const targetUser = interaction.options.getUser('user');
-        if (!targetUser) {
-            console.error('No user provided in options');
-            return interaction.reply({
-                content: '❌ Please provide a valid user to give currency to.',
-                ephemeral: true
-            });
-        }
-
-        const amount = interaction.options.getInteger('amount');
-        if (!amount) {
-            console.error('No amount provided in options');
-            return interaction.reply({
-                content: '❌ Please provide a valid amount of currency to give.',
-                ephemeral: true
-            });
-        }
-
         try {
+            // Check if user has admin permissions
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({
+                    content: '❌ You do not have permission to use this command.',
+                    ephemeral: true
+                });
+            }
+
+            // Get all options
+            const options = interaction.options._hoistedOptions;
+            console.log('All command options:', options);
+
+            // Get the user option specifically
+            const userOption = options.find(opt => opt.name === 'user');
+            console.log('User option:', userOption);
+
+            if (!userOption || !userOption.user) {
+                console.error('No user option found or user is null:', userOption);
+                return interaction.reply({
+                    content: '❌ Please provide a valid user to give currency to.',
+                    ephemeral: true
+                });
+            }
+
+            const targetUser = userOption.user;
+            const amount = interaction.options.getInteger('amount');
+
             console.log('Target user:', {
                 id: targetUser.id,
                 username: targetUser.username,
