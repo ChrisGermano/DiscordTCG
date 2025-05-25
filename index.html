@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord TCG Bot</title>
+    <style>
+        :root {
+            --primary-color: #5865F2;
+            --secondary-color: #2C2F33;
+            --background-color: #36393F;
+            --text-color: #FFFFFF;
+            --accent-color: #7289DA;
+            --card-background: #2F3136;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            background-color: var(--card-background);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .setup {
+            background-color: var(--card-background);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 4rem;
+        }
+
+        .setup h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .setup ol {
+            list-style-position: inside;
+            margin-left: 1rem;
+        }
+
+        .setup li {
+            margin-bottom: 1rem;
+        }
+
+        .code-block {
+            background-color: #1E1F22;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #DCDCAA;
+        }
+
+        .commands {
+            background-color: var(--card-background);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 4rem;
+        }
+
+        .commands h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .command-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .command-item {
+            background-color: #1E1F22;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+
+        .command-item code {
+            color: #DCDCAA;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .command-item p {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background-color: var(--secondary-color);
+            margin-top: 4rem;
+        }
+
+        .github-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .github-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Discord TCG Bot</h1>
+            <p class="subtitle">A powerful trading card game system for your Discord server</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="features">
+            <div class="feature-card">
+                <h3>🎴 Card System</h3>
+                <p>Collect cards of different rarities, from Common to Legendary. Each card has unique attributes including power, description, and special variants.</p>
+            </div>
+            <div class="feature-card">
+                <h3>💱 Trading System</h3>
+                <p>Trade cards with other users, create trade offers, and manage your collection. The system includes safety checks and rate limiting to prevent abuse.</p>
+            </div>
+            <div class="feature-card">
+                <h3>💰 Economy</h3>
+                <p>Earn currency, open card packs, and manage your collection. The system includes daily rewards and a balanced economy.</p>
+            </div>
+        </section>
+
+        <section class="setup">
+            <h2>Quick Setup Guide</h2>
+            <ol>
+                <li>Create a Discord Application
+                    <ul>
+                        <li>Go to the <a href="https://discord.com/developers/applications" target="_blank" style="color: var(--primary-color);">Discord Developer Portal</a></li>
+                        <li>Click "New Application" and give it a name</li>
+                        <li>Navigate to the "Bot" tab and click "Add Bot"</li>
+                    </ul>
+                </li>
+                <li>Configure Bot Permissions
+                    <ul>
+                        <li>Go to the "OAuth2" tab</li>
+                        <li>Select "URL Generator"</li>
+                        <li>Choose required scopes: <code>bot</code> and <code>applications.commands</code></li>
+                        <li>Select bot permissions: <code>Send Messages</code> and <code>Use Slash Commands</code></li>
+                    </ul>
+                </li>
+                <li>Install Dependencies
+                    <div class="code-block">
+                        <code>npm install</code>
+                    </div>
+                </li>
+                <li>Configure Environment
+                    <div class="code-block">
+                        <code># Create .env file
+DISCORD_TOKEN=your_bot_token
+MONGODB_URI=your_mongodb_uri
+ADMIN_USER_ID=your_discord_id
+CLIENT_ID=your_client_id
+CURRENCY_NAME=Vladbucks
+DEFAULT_CREDITS=10
+PACK_COST=5
+EARN_COOLDOWN=43200000
+SPECIAL_CHANCE=0.1
+LEGENDARY_CHANCE=0.01</code>
+                    </div>
+                </li>
+                <li>Deploy Commands and Start Bot
+                    <div class="code-block">
+                        <code>npm run deploy
+npm start</code>
+                    </div>
+                </li>
+            </ol>
+        </section>
+
+        <section class="commands">
+            <h2>Available Commands</h2>
+            <div class="command-list">
+                <div class="command-item">
+                    <code>/tcg open</code>
+                    <p>Open a new pack of cards</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg showcollection</code>
+                    <p>View your card collection</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg earn</code>
+                    <p>Earn daily currency</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg tradeup</code>
+                    <p>Trade 5 cards for a higher rarity</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg trade offer</code>
+                    <p>Offer a trade to another user</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg battle</code>
+                    <p>Challenge another user to a card battle</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg profile</code>
+                    <p>View your collection statistics</p>
+                </div>
+                <div class="command-item">
+                    <code>/tcg help</code>
+                    <p>List all available commands</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Discord TCG Bot is open source and available on <a href="https://github.com/yourusername/DiscordTCG" class="github-link">GitHub</a></p>
+            <p>Built with ❤️ for Discord communities</p>
+        </div>
+    </footer>
+</body>
+</html> 
