@@ -3,288 +3,954 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord TCG Bot</title>
+    <title>DiscordTCG - Make Your Community Collectible</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Trade+Winds&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #5865F2;
-            --secondary-color: #2C2F33;
-            --background-color: #36393F;
-            --text-color: #FFFFFF;
-            --accent-color: #7289DA;
-            --card-background: #2F3136;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background: rgba(11, 11, 43, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .navbar.hidden {
+            transform: translateY(-100%);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-family: 'Trade Winds', cursive;
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #F2CB07, #41E1F2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-links a:hover {
+            color: #F2CB07;
+        }
+
+        .nav-links a:hover::after {
+            width: 80%;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.8rem 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .nav-links a {
+                font-size: 1rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+
+        /* Adjust header to account for navbar */
+        header {
+            padding-top: 60px; /* Height of navbar */
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #F2CB07;
+        }
+
+        .header-split {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #808C20;
+            clip-path: polygon(0 0, 40% 0, 20% 100%, 0 100%);
+            transition: clip-path 0.1s linear;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        h1 {
+            font-size: 5rem;
+            color: white;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Ensure content is visible */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 200vh; /* For scrolling */
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
             line-height: 1.6;
-            background-color: var(--background-color);
-            color: var(--text-color);
+        }
+
+        h1, h2, h3, .feature-title, .subtitle {
+            font-family: 'Trade Winds', cursive;
+            letter-spacing: 0.05em;
+        }
+
+        .project-section {
+            background: #D9593D;
+            padding: 6rem 2rem;
+            position: relative;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 3rem;
+            perspective: 1000px;
+        }
+
+        .project-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
             padding: 2rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        header {
-            text-align: center;
-            padding: 4rem 0;
-            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-            margin-bottom: 3rem;
+        .project-card.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        h1 {
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #F2CB07, #41E1F2, #808C20);
+            opacity: 0.7;
+        }
+
+        .project-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 
+                0 8px 12px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        h2 {
             font-size: 3rem;
             margin-bottom: 1rem;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .subtitle {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 3rem;
             opacity: 0.9;
+            line-height: 1.4;
         }
 
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
-        }
-
-        .feature-card {
-            background-color: var(--card-background);
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-card h3 {
-            color: var(--primary-color);
+        .feature-title {
+            font-size: 1.8rem;
             margin-bottom: 1rem;
+            color: #F2CB07;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            padding-bottom: 0.5rem;
         }
 
-        .setup {
-            background-color: var(--card-background);
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 4rem;
+        .feature-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                rgba(242, 203, 7, 0.5) 0%,
+                rgba(65, 225, 242, 0.5) 50%,
+                rgba(128, 140, 32, 0.5) 100%
+            );
         }
 
-        .setup h2 {
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
+        .project-card p {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            line-height: 1.6;
         }
 
-        .setup ol {
-            list-style-position: inside;
-            margin-left: 1rem;
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            color: white;
+            opacity: 0.8;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: bounce 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
         }
 
-        .setup li {
+        .scroll-indicator:hover {
+            opacity: 1;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .project-section {
+                padding: 4rem 1rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+
+            h1 {
+                font-size: 3rem;
+            }
+
+            .scroll-indicator {
+                font-size: 2rem;
+                bottom: 1.5rem;
+            }
+
+            .project-card {
+                transform: none !important;
+            }
+            
+            .project-card:hover {
+                transform: translateY(-3px) !important;
+            }
+        }
+
+        .commands-section {
+            background: #F2637E;
+            padding: 6rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            perspective: 1000px;
+        }
+
+        .command-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .command-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #F2CB07, #41E1F2, #808C20);
+            opacity: 0.7;
+        }
+
+        .command-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .command-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 
+                0 8px 12px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .command-name {
+            color: #F2CB07;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .command-name::before {
+            content: '/tcg';
+            opacity: 0.7;
+        }
+
+        .command-name::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                rgba(242, 203, 7, 0.5) 0%,
+                rgba(65, 225, 242, 0.5) 50%,
+                rgba(128, 140, 32, 0.5) 100%
+            );
+        }
+
+        .command-description {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.4;
+            position: relative;
+            z-index: 1;
+        }
+
+        .commands-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="rgba(255,255,255,0.05)"/></svg>');
+            opacity: 0.1;
+            transform: translateZ(-1px) scale(2);
+            z-index: 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .commands-section {
+                padding: 4rem 1rem;
+            }
+            
+            .commands-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            .command-card {
+                transform: none !important;
+            }
+            
+            .command-card:hover {
+                transform: translateY(-3px) !important;
+            }
+        }
+
+        .installation-section {
+            background: #41E1F2;
+            padding: 6rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .installation-steps {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .installation-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .installation-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .installation-step::after {
+            content: '';
+            position: absolute;
+            left: 1.5rem;
+            top: 4rem;
+            bottom: -3rem;
+            width: 2px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .installation-step:last-child::after {
+            display: none;
+        }
+
+        .step-number {
+            font-family: 'Trade Winds', cursive;
+            font-size: 2.5rem;
+            color: #F2637E;
+            background: white;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 2rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-content {
+            flex-grow: 1;
+            padding-top: 0.5rem;
+        }
+
+        .step-title {
+            font-family: 'Trade Winds', cursive;
+            font-size: 1.8rem;
+            color: #0B0B2B;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-description {
+            color: #0B0B2B;
+            line-height: 1.6;
+            font-size: 1.1rem;
             margin-bottom: 1rem;
         }
 
         .code-block {
-            background-color: #1E1F22;
+            background: rgba(0, 0, 0, 0.1);
             padding: 1rem;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-family: monospace;
             margin: 1rem 0;
-            overflow-x: auto;
-        }
-
-        .code-block code {
-            font-family: 'Consolas', 'Monaco', monospace;
-            color: #DCDCAA;
-        }
-
-        .commands {
-            background-color: var(--card-background);
-            padding: 2rem;
-            border-radius: 10px;
-            margin-bottom: 4rem;
-        }
-
-        .commands h2 {
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-        }
-
-        .command-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .command-item {
-            background-color: #1E1F22;
-            padding: 1rem;
-            border-radius: 5px;
-        }
-
-        .command-item code {
-            color: #DCDCAA;
-            font-family: 'Consolas', 'Monaco', monospace;
-        }
-
-        .command-item p {
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        footer {
-            text-align: center;
-            padding: 2rem;
-            background-color: var(--secondary-color);
-            margin-top: 4rem;
-        }
-
-        .github-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .github-link:hover {
-            text-decoration: underline;
+            white-space: pre-wrap;
+            color: #0B0B2B;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
+            .installation-section {
+                padding: 4rem 1rem;
             }
-
-            h1 {
+            
+            .installation-step {
+                margin-bottom: 2rem;
+            }
+            
+            .step-number {
                 font-size: 2rem;
+                width: 2.5rem;
+                height: 2.5rem;
+                margin-right: 1.5rem;
+            }
+            
+            .step-title {
+                font-size: 1.5rem;
+            }
+            
+            .step-description {
+                font-size: 1rem;
             }
 
-            .subtitle {
-                font-size: 1.2rem;
+            .installation-step::after {
+                left: 1.25rem;
+                top: 3.5rem;
             }
+        }
+
+        .step-list {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: #0B0B2B;
+        }
+
+        .step-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .step-note {
+            font-size: 0.9rem;
+            color: #0B0B2B;
+            opacity: 0.8;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+
+        .step-list a {
+            color: #F2637E;
+            text-decoration: none;
+            border-bottom: 1px dotted #F2637E;
+        }
+
+        .step-list a:hover {
+            border-bottom: 1px solid #F2637E;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Discord TCG Bot</h1>
-            <p class="subtitle">A powerful trading card game system for your Discord server</p>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#commands">Commands</a></li>
+            <li><a href="#installation">Installation</a></li>
+        </ul>
+    </nav>
+
+    <header id="home">
+        <div class="header-bg"></div>
+        <div class="header-split"></div>
+        <div class="header-content">
+            <h1>DiscordTCG</h1>
+            <div class="scroll-indicator" onclick="document.querySelector('.project-section').scrollIntoView({behavior: 'smooth'})">↓</div>
         </div>
     </header>
 
-    <main class="container">
-        <section class="features">
-            <div class="feature-card">
-                <h3>🎴 Card System</h3>
-                <p>Collect cards of different rarities, from Common to Legendary. Each card has unique attributes including power, description, and special variants.</p>
-            </div>
-            <div class="feature-card">
-                <h3>💱 Trading System</h3>
-                <p>Trade cards with other users, create trade offers, and manage your collection. The system includes safety checks and rate limiting to prevent abuse.</p>
-            </div>
-            <div class="feature-card">
-                <h3>💰 Economy</h3>
-                <p>Earn currency, open card packs, and manage your collection. The system includes daily rewards and a balanced economy.</p>
-            </div>
-        </section>
-
-        <section class="setup">
-            <h2>Quick Setup Guide</h2>
-            <ol>
-                <li>Create a Discord Application
-                    <ul>
-                        <li>Go to the <a href="https://discord.com/developers/applications" target="_blank" style="color: var(--primary-color);">Discord Developer Portal</a></li>
-                        <li>Click "New Application" and give it a name</li>
-                        <li>Navigate to the "Bot" tab and click "Add Bot"</li>
-                    </ul>
-                </li>
-                <li>Configure Bot Permissions
-                    <ul>
-                        <li>Go to the "OAuth2" tab</li>
-                        <li>Select "URL Generator"</li>
-                        <li>Choose required scopes: <code>bot</code> and <code>applications.commands</code></li>
-                        <li>Select bot permissions: <code>Send Messages</code> and <code>Use Slash Commands</code></li>
-                    </ul>
-                </li>
-                <li>Install Dependencies
-                    <div class="code-block">
-                        <code>npm install</code>
-                    </div>
-                </li>
-                <li>Configure Environment
-                    <div class="code-block">
-                        <code># Create .env file
-DISCORD_TOKEN=your_bot_token
-MONGODB_URI=your_mongodb_uri
-ADMIN_USER_ID=your_discord_id
-CLIENT_ID=your_client_id
-CURRENCY_NAME=Vladbucks
-DEFAULT_CREDITS=10
-PACK_COST=5
-EARN_COOLDOWN=43200000
-SPECIAL_CHANCE=0.1
-LEGENDARY_CHANCE=0.01</code>
-                    </div>
-                </li>
-                <li>Deploy Commands and Start Bot
-                    <div class="code-block">
-                        <code>npm run deploy
-npm start</code>
-                    </div>
-                </li>
-            </ol>
-        </section>
-
-        <section class="commands">
-            <h2>Available Commands</h2>
-            <div class="command-list">
-                <div class="command-item">
-                    <code>/tcg open</code>
-                    <p>Open a new pack of cards</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg showcollection</code>
-                    <p>View your card collection</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg earn</code>
-                    <p>Earn daily currency</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg tradeup</code>
-                    <p>Trade 5 cards for a higher rarity</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg trade offer</code>
-                    <p>Offer a trade to another user</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg battle</code>
-                    <p>Challenge another user to a card battle</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg profile</code>
-                    <p>View your collection statistics</p>
-                </div>
-                <div class="command-item">
-                    <code>/tcg help</code>
-                    <p>List all available commands</p>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
+    <section id="features" class="project-section">
         <div class="container">
-            <p>Discord TCG Bot is open source and available on <a href="https://github.com/yourusername/DiscordTCG" class="github-link">GitHub</a></p>
-            <p>Built with ❤️ for Discord communities</p>
+            <h2>Discord Trading Card Game</h2>
+            <p class="subtitle">Transform your Discord community into an engaging collectible card game experience. Create, trade, and battle with unique cards representing your community members.</p>
+            
+            <div class="project-grid">
+                <div class="project-card">
+                    <h3 class="feature-title">Collect & Trade</h3>
+                    <p>Open packs to discover new cards, trade with friends, and build your collection. Each card is unique and represents a member of your community.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3 class="feature-title">Battle System</h3>
+                    <p>Challenge other players to card battles using your collection. Strategic gameplay with unique card abilities and community-specific mechanics.</p>
+                </div>
+                
+                <div class="project-card">
+                    <h3 class="feature-title">Community Integration</h3>
+                    <p>Cards are automatically generated from your server's members, creating a personalized experience that celebrates your community.</p>
+                </div>
+            </div>
         </div>
-    </footer>
+    </section>
+
+    <section id="commands" class="commands-section">
+        <div class="commands-bg"></div>
+        <h2 class="section-title">Commands & Features</h2>
+        <div class="commands-grid">
+            <div class="command-card">
+                <h3 class="command-name">open</h3>
+                <p class="command-description">Open a card pack to discover new cards for your collection.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">showcollection</h3>
+                <p class="command-description">View your current card collection and manage your cards.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">earn</h3>
+                <p class="command-description">Earn currency to purchase card packs and trade with others.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">tradeup</h3>
+                <p class="command-description">Trade in multiple cards to receive a higher rarity card.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">battle</h3>
+                <p class="command-description">Challenge other players to card battles using your collection.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">fuse</h3>
+                <p class="command-description">Combine cards to create unique, powerful combinations.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">trade</h3>
+                <p class="command-description">Trade cards with other players in your community.</p>
+            </div>
+            <div class="command-card">
+                <h3 class="command-name">profile</h3>
+                <p class="command-description">View your profile, stats, and collection highlights.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="installation" class="installation-section">
+        <h2 class="section-title">Installation</h2>
+        <div class="installation-steps">
+            <div class="installation-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3 class="step-title">Prerequisites</h3>
+                    <p class="step-description">Before starting, ensure you have:</p>
+                    <ul class="step-list">
+                        <li>Node.js 16.x or higher</li>
+                        <li>npm (comes with Node.js)</li>
+                        <li>A Discord account with server management permissions</li>
+                        <li>A MongoDB Atlas account</li>
+                        <li>A server with PM2 installed (for production)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3 class="step-title">Discord Bot Setup</h3>
+                    <p class="step-description">Create and configure your Discord bot:</p>
+                    <ol class="step-list">
+                        <li>Go to the <a href="https://discord.com/developers/applications" target="_blank">Discord Developer Portal</a></li>
+                        <li>Click "New Application" and give it a name (e.g., "DiscordTCG")</li>
+                        <li>In the "Bot" section:
+                            <ul class="step-list">
+                                <li>Click "Add Bot"</li>
+                                <li>Enable "Message Content Intent" under Privileged Gateway Intents</li>
+                                <li>Enable "Server Members Intent"</li>
+                                <li>Save your changes</li>
+                            </ul>
+                        </li>
+                        <li>In the "OAuth2" → "URL Generator" section:
+                            <ul class="step-list">
+                                <li>Under "Scopes", select:
+                                    <ul class="step-list">
+                                        <li>bot</li>
+                                        <li>applications.commands</li>
+                                    </ul>
+                                </li>
+                                <li>Under "Bot Permissions", select:
+                                    <ul class="step-list">
+                                        <li>Send Messages</li>
+                                        <li>Embed Links</li>
+                                        <li>Attach Files</li>
+                                        <li>Read Message History</li>
+                                        <li>Use Slash Commands</li>
+                                        <li>Add Reactions</li>
+                                        <li>Read Messages/View Channels</li>
+                                    </ul>
+                                </li>
+                                <li>Copy the generated URL at the bottom</li>
+                            </ul>
+                        </li>
+                        <li>Use the generated URL to invite the bot to your server</li>
+                        <li>Copy your bot token from the "Bot" section (click "Reset Token" if needed)</li>
+                        <li>Note your Application ID (Client ID) from the "General Information" section</li>
+                    </ol>
+                    <p class="step-note">Keep your bot token secure and never share it. If compromised, reset it immediately in the Developer Portal.</p>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3 class="step-title">Clone & Setup</h3>
+                    <p class="step-description">Get the code and install dependencies:</p>
+                    <div class="code-block">git clone https://github.com/yourusername/DiscordTCG.git
+cd DiscordTCG
+npm install</div>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3 class="step-title">MongoDB Setup</h3>
+                    <p class="step-description">Set up your database:</p>
+                    <ol class="step-list">
+                        <li>Create a MongoDB Atlas account at <a href="https://www.mongodb.com/cloud/atlas" target="_blank">mongodb.com/cloud/atlas</a></li>
+                        <li>Create a new cluster (free tier is sufficient)</li>
+                        <li>Create a database user with read/write permissions</li>
+                        <li>Add your IP address to the IP whitelist</li>
+                        <li>Get your connection string from the "Connect" button</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3 class="step-title">Environment Configuration</h3>
+                    <p class="step-description">Create a .env file in the root directory with all required variables:</p>
+                    <div class="code-block"># Discord Configuration
+DISCORD_TOKEN=your_bot_token_here        # From Bot section
+CLIENT_ID=your_client_id_here           # From General Information
+GUILD_ID=your_guild_id_here             # Right-click server → Copy ID (Developer Mode must be on)
+
+# MongoDB Configuration
+MONGODB_URI=your_mongodb_connection_string_here
+DB_NAME=discordtcg
+
+# Bot Configuration
+CURRENCY_NAME=coins
+PACK_COST=100
+DAILY_AMOUNT=50
+MAX_CARDS_PER_PACK=5
+
+# Optional: Production Settings
+NODE_ENV=production
+LOG_LEVEL=info</div>
+                    <p class="step-note">Replace all placeholder values with your actual configuration. The MongoDB URI should look like: mongodb+srv://username:password@cluster.mongodb.net/discordtcg</p>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                    <h3 class="step-title">Deploy Commands</h3>
+                    <p class="step-description">Register the slash commands with Discord:</p>
+                    <div class="code-block">node src/scripts/deployCommands.js</div>
+                    <p class="step-note">This only needs to be done once, or when you update command definitions. Make sure your bot has the applications.commands scope and proper permissions.</p>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">7</div>
+                <div class="step-content">
+                    <h3 class="step-title">Development Testing</h3>
+                    <p class="step-description">For local development and testing:</p>
+                    <div class="code-block">npm run dev</div>
+                    <p class="step-note">This runs the bot with nodemon for automatic restarts during development. Verify the bot is online and commands are working in your server.</p>
+                </div>
+            </div>
+            
+            <div class="installation-step">
+                <div class="step-number">8</div>
+                <div class="step-content">
+                    <h3 class="step-title">Production Deployment</h3>
+                    <p class="step-description">For production deployment using PM2:</p>
+                    <div class="code-block"># Install PM2 globally if not already installed
+npm install -g pm2
+
+# Start the bot with PM2
+pm2 start src/index.js --name discordtcg
+
+# Other useful PM2 commands:
+pm2 logs discordtcg          # View logs
+pm2 monit                    # Monitor the bot
+pm2 restart discordtcg       # Restart the bot
+pm2 stop discordtcg          # Stop the bot
+pm2 delete discordtcg        # Remove from PM2
+
+# Set up PM2 to start on system boot
+pm2 startup
+pm2 save</div>
+                    <p class="step-note">PM2 will automatically restart the bot if it crashes and can start it on system boot. Monitor the logs for any permission or connection issues.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const headerSplit = document.querySelector('.header-split');
+        let lastScrollY = window.scrollY;
+
+        function updateSplit() {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const scrollProgress = Math.min(scrollY / windowHeight, 1);
+            
+            const topRight = 40 + (scrollProgress * 60);
+            const bottomRight = 20 + (scrollProgress * 80);
+            
+            headerSplit.style.clipPath = `polygon(0 0, ${topRight}% 0, ${bottomRight}% 100%, 0 100%)`;
+            
+            lastScrollY = scrollY;
+        }
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Observe all project cards
+        document.querySelectorAll('.project-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Update on scroll
+        window.addEventListener('scroll', () => {
+            requestAnimationFrame(updateSplit);
+        });
+
+        // Initial update
+        updateSplit();
+
+        // Parallax effect for commands section
+        const commandsBg = document.querySelector('.commands-bg');
+        
+        window.addEventListener('scroll', () => {
+            const commandsSection = document.querySelector('.commands-section');
+            const rect = commandsSection.getBoundingClientRect();
+            
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                const scrolled = window.pageYOffset;
+                const rate = scrolled * 0.5;
+                commandsBg.style.transform = `translateZ(-1px) scale(2) translateY(${rate}px)`;
+            }
+        });
+
+        // Navbar scroll behavior
+        let lastScrollTop = 0;
+        const navbar = document.querySelector('.navbar');
+        const scrollThreshold = 100;
+
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Hide navbar when scrolling down, show when scrolling up
+            if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+                navbar.classList.add('hidden');
+            } else {
+                navbar.classList.remove('hidden');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                const navbarHeight = navbar.offsetHeight;
+                
+                window.scrollTo({
+                    top: targetSection.offsetTop - navbarHeight,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
-</html> 
+</html>
