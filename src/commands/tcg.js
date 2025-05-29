@@ -15,127 +15,90 @@ const fuseCommand = require('./tcg/fuse');
 const tradeCommand = require('./tcg/trade');
 const inspectCommand = require('./tcg/inspect');
 
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('tcg')
-        .setDescription('TCG card commands')
-        .addSubcommand(openCommand.data)
-        .addSubcommand(showcollectionCommand.data)
-        .addSubcommand(earnCommand.data)
-        .addSubcommand(tradeupCommand.data)
-        .addSubcommand(givecurrencyCommand.data)
-        .addSubcommand(resetCommand.data)
-        .addSubcommand(createCardCommand.data)
-        .addSubcommand(battleCommand.data)
-        .addSubcommand(acceptCommand.data)
-        .addSubcommand(helpCommand.data)
-        .addSubcommand(viewCommand.data)
-        .addSubcommand(profileCommand.data)
-        .addSubcommand(fuseCommand.data)
-        .addSubcommand(inspectCommand.data)
-        .addSubcommandGroup(group => group
-            .setName('trade')
-            .setDescription('Trade cards with other users')
-            .addSubcommand(subcommand =>
-                subcommand
-                    .setName('offer')
-                    .setDescription('Offer a trade to another user')
-                    .addStringOption(option =>
-                        option.setName('cards')
-                            .setDescription('Cards you want to trade (comma-separated)')
-                            .setRequired(true))
-                    .addStringOption(option =>
-                        option.setName('for')
-                            .setDescription('Cards you want in return (comma-separated)')
-                            .setRequired(true))
-                    .addUserOption(option =>
-                        option.setName('user')
-                            .setDescription('User to trade with')
-                            .setRequired(true)))
-            .addSubcommand(subcommand =>
-                subcommand
-                    .setName('accept')
-                    .setDescription('Accept a trade offer')
-                    .addStringOption(option =>
-                        option.setName('trade_id')
-                            .setDescription('ID of the trade to accept')
-                            .setRequired(true)))
-            .addSubcommand(subcommand =>
-                subcommand
-                    .setName('cancel')
-                    .setDescription('Cancel a trade offer')
-                    .addStringOption(option =>
-                        option.setName('trade_id')
-                            .setDescription('ID of the trade to cancel')
-                            .setRequired(true)))),
+const data = new SlashCommandBuilder()
+    .setName('tcg')
+    .setDescription('TCG system commands')
+    .addSubcommand(openCommand.data)
+    .addSubcommand(showcollectionCommand.data)
+    .addSubcommand(earnCommand.data)
+    .addSubcommand(tradeupCommand.data)
+    .addSubcommand(givecurrencyCommand.data)
+    .addSubcommand(resetCommand.data)
+    .addSubcommand(createCardCommand.data)
+    .addSubcommand(battleCommand.data)
+    .addSubcommand(acceptCommand.data)
+    .addSubcommand(helpCommand.data)
+    .addSubcommand(viewCommand.data)
+    .addSubcommand(profileCommand.data)
+    .addSubcommand(fuseCommand.data)
+    .addSubcommand(inspectCommand.data)
+    .addSubcommandGroup(group => group
+        .setName('trade')
+        .setDescription('Trade cards with other users')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('offer')
+                .setDescription('Offer a trade to another user')
+                .addStringOption(option =>
+                    option.setName('cards')
+                        .setDescription('Cards you want to trade (comma-separated)')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('for')
+                        .setDescription('Cards you want in return (comma-separated)')
+                        .setRequired(true))
+                .addUserOption(option =>
+                    option.setName('user')
+                        .setDescription('User to trade with')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('accept')
+                .setDescription('Accept a trade offer')
+                .addStringOption(option =>
+                    option.setName('trade_id')
+                        .setDescription('ID of the trade to accept')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('cancel')
+                .setDescription('Cancel a trade offer')
+                .addStringOption(option =>
+                    option.setName('trade_id')
+                        .setDescription('ID of the trade to cancel')
+                        .setRequired(true))));
 
-    async execute(interaction) {
-        console.log('TCG command received');
-        console.log('Raw options:', interaction.options);
-        console.log('Options data:', interaction.options.data);
-        console.log('Hoisted options:', interaction.options._hoistedOptions);
-        
-        let subcommand;
-        let subcommandGroup;
-        
-        try {
-            // First try to get the subcommand
-            subcommand = interaction.options.getSubcommand();
-            console.log('Subcommand name:', subcommand);
-            
-            // Only try to get subcommand group if it exists
-            try {
-                subcommandGroup = interaction.options.getSubcommandGroup();
-                console.log('Subcommand group:', subcommandGroup);
-            } catch (error) {
-                // If no subcommand group exists, that's fine - just set it to null
-                subcommandGroup = null;
-                console.log('No subcommand group found');
-            }
-            
-            console.log(`Subcommand: ${subcommand}, Group: ${subcommandGroup}`);
-        } catch (error) {
-            console.error('Error getting subcommand:', error);
-            return await interaction.reply({
-                content: 'Please use a valid subcommand. Use `/tcg help` to see available commands.',
-                ephemeral: true
-            });
-        }
+async function execute(interaction) {
+    try {
+        const subcommand = interaction.options.getSubcommand();
+        const subcommandGroup = interaction.options.getSubcommandGroup();
 
-        // If this is a trade command (has subcommand group 'trade')
+        // Handle trade command group separately
         if (subcommandGroup === 'trade') {
-            console.log('Executing trade command');
             return await tradeCommand.execute(interaction);
         }
 
-        // Handle all other commands
-        const command = {
-            'open': openCommand,
-            'showcollection': showcollectionCommand,
-            'earn': earnCommand,
-            'tradeup': tradeupCommand,
-            'givecurrency': givecurrencyCommand,
-            'reset': resetCommand,
-            'createcard': createCardCommand,
-            'battle': battleCommand,
-            'accept': acceptCommand,
-            'help': helpCommand,
-            'view': viewCommand,
-            'profile': profileCommand,
-            'fuse': fuseCommand,
-            'inspect': inspectCommand
-        }[subcommand];
+        // Handle other subcommands
+        const command = require(`./tcg/${subcommand}`);
+        if (!command || typeof command.execute !== 'function') {
+            throw new Error(`Unknown subcommand: ${subcommand}`);
+        }
 
-        if (command) {
-            console.log(`Executing subcommand: ${subcommand}`);
-            console.log('Command options before execution:', interaction.options);
-            return await command.execute(interaction);
+        await command.execute(interaction);
+
+    } catch (error) {
+        console.error('Error in TCG command:', error);
+        const errorMessage = 'There was an error executing the command. Please try again later.';
+        
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
         } else {
-            console.log(`Unknown subcommand: ${subcommand}`);
-            return await interaction.reply({
-                content: `Unknown subcommand: ${subcommand}. Use \`/tcg help\` to see available commands.`,
-                ephemeral: true
-            });
+            await interaction.editReply({ content: errorMessage, ephemeral: true });
         }
     }
+}
+
+module.exports = {
+    data,
+    execute
 }; 

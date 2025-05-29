@@ -41,23 +41,18 @@ module.exports = {
                 try {
                     // Delete all cards
                     await Card.deleteMany({});
-                    console.log('Deleted all cards');
 
                     // Delete all fused cards
                     await FusedCard.deleteMany({});
-                    console.log('Deleted all fused cards');
 
                     // Delete all trades
                     await Trade.deleteMany({});
-                    console.log('Deleted all trades');
 
                     // Delete all battles
                     await Battle.deleteMany({});
-                    console.log('Deleted all battles');
 
                     // Reset all user collections
                     await UserCollection.deleteMany({});
-                    console.log('Deleted all user collections');
 
                     // Reset all user XP and level
                     const users = await User.find({});
@@ -67,7 +62,6 @@ module.exports = {
                         user.lastXpGain = null;
                         await user.save();
                     }
-                    console.log('Reset all user XP and levels');
 
                     // Reset all user credits to default
                     await UserCredits.updateMany({}, {
@@ -76,7 +70,6 @@ module.exports = {
                             lastEarnTime: null
                         }
                     });
-                    console.log('Reset all user currency to default');
 
                     // Read and regenerate cards from config
                     const cardsConfigPath = path.join(__dirname, '../../config/cards.json');
@@ -84,7 +77,6 @@ module.exports = {
                     
                     // Get the cards array from the config
                     const cardsData = Array.isArray(rawCardsData.cards) ? rawCardsData.cards : [];
-                    console.log(`Loaded ${cardsData.length} cards from config`);
 
                     if (cardsData.length === 0) {
                         throw new Error('No cards found in the config file. Please check the card data format.');
@@ -108,8 +100,6 @@ module.exports = {
                         throw new Error('No valid cards found in the config file. Please check the card data format.');
                     }
 
-                    console.log(`Found ${validCards.length} valid cards out of ${cardsData.length} total cards`);
-
                     // Insert all valid cards from config
                     const cardsToInsert = validCards.map(card => ({
                         name: card.name.trim(),
@@ -122,7 +112,6 @@ module.exports = {
                     }));
 
                     await Card.insertMany(cardsToInsert);
-                    console.log(`Successfully inserted ${cardsToInsert.length} cards into the database`);
 
                     await interaction.followUp({
                         content: '✅ System reset complete!\n' +
