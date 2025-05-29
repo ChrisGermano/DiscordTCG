@@ -3,6 +3,7 @@ const { MessageEmbed } = require('discord.js');
 const Battle = require('../../models/Battle');
 const Card = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
+const FusedCard = require('../../models/FusedCard');
 
 const BATTLE_EFFECTS = {
     common: { probability: 0.3, effects: ['power_boost', 'power_reduction'] },
@@ -81,23 +82,37 @@ async function execute(interaction) {
             return interaction.editReply('You don\'t have any pending battles to accept.');
         }
 
-        const defenderCollection = await UserCollection.findOne({ userId });
+        const defenderCollection = await UserCollection.findOne({ userId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
         if (!defenderCollection) {
             return interaction.editReply('You don\'t have any cards in your collection.');
         }
 
-        const defenderCard = defenderCollection.cards.find(c => c.cardId.toString() === pendingBattle.defenderCardId.toString());
+        const defenderCard = defenderCollection.cards.find(c => 
+            c.cardId && c.cardId.toString() === pendingBattle.defenderCardId.toString() && 
+            c.cardType === pendingBattle.defenderCardType
+        );
         if (!defenderCard) {
             return interaction.editReply('The card you selected for battle is no longer in your collection.');
         }
 
-        const populatedDefenderCard = await Card.findById(defenderCard.cardId);
+        let populatedDefenderCard;
+        if (defenderCard.cardType === 'Card') {
+            populatedDefenderCard = await Card.findById(defenderCard.cardId);
+        } else if (defenderCard.cardType === 'FusedCard') {
+            populatedDefenderCard = await FusedCard.findById(defenderCard.cardId);
+        }
+
         if (!populatedDefenderCard) {
             return interaction.editReply('Error: Could not find your battle card in the database.');
         }
 
         pendingBattle.defenderCard = {
             cardId: defenderCard.cardId,
+            cardType: defenderCard.cardType,
             power: populatedDefenderCard.power,
             rarity: populatedDefenderCard.rarity,
             special: defenderCard.special
@@ -105,19 +120,21 @@ async function execute(interaction) {
         pendingBattle.status = 'active';
         await pendingBattle.save();
 
-        const challengerCollection = await UserCollection.findOne({ userId: pendingBattle.challengerId });
+        const challengerCollection = await UserCollection.findOne({ userId: pendingBattle.challengerId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
         if (!challengerCollection) {
             return interaction.editReply('Error: Challenger\'s collection not found.');
         }
 
-        const challengerCard = challengerCollection.cards.find(c => c.cardId.toString() === pendingBattle.challengerCardId.toString());
+        const challengerCard = challengerCollection.cards.find(c => 
+            c.cardId && c.cardId.toString() === pendingBattle.challengerCardId.toString() && 
+            c.cardType === pendingBattle.challengerCardType
+        );
         if (!challengerCard) {
             return interaction.editReply('Error: Challenger\'s battle card not found.');
-        }
-
-        const populatedChallengerCard = await Card.findById(challengerCard.cardId);
-        if (!populatedChallengerCard) {
-            return interaction.editReply('Error: Could not find challenger\'s battle card in the database.');
         }
 
         let challengerWins = 0;

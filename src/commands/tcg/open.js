@@ -3,100 +3,157 @@ const Card = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
 const config = require('../../config/config');
+const User = require('../../models/User');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('open')
     .setDescription(`Open a new pack of cards (Costs ${config.packCost} ${config.currencyName})`);
 
+async function generatePack() {
+    // Get 3 common cards
+    const commonCards = await Card.aggregate([
+        { $match: { rarity: 'common' } },
+        { $sample: { size: 3 } }
+    ]);
+
+    // Get 1 uncommon card
+    const uncommonCard = await Card.aggregate([
+        { $match: { rarity: 'uncommon' } },
+        { $sample: { size: 1 } }
+    ]);
+
+    // Get 1 rare or legendary card (with legendary chance)
+    const isLegendary = Math.random() < config.legendaryChance;
+    const rareOrLegendary = await Card.aggregate([
+        { $match: { rarity: isLegendary ? 'legendary' : 'rare' } },
+        { $sample: { size: 1 } }
+    ]);
+
+    return [...commonCards, ...uncommonCard, ...rareOrLegendary];
+}
+
+function getRarityEmoji(rarity) {
+    const emojis = {
+        common: '⚪',
+        uncommon: '🟢',
+        rare: '🔵',
+        legendary: '🟣',
+        fused: '✨'
+    };
+    return emojis[rarity] || '⚪';
+}
+
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-        let userCredits = await UserCredits.findOne({ userId: interaction.user.id });
+        const userId = interaction.user.id;
+        let user = await User.findOne({ userId });
+        let userCollection = await UserCollection.findOne({ userId });
+        let userCredits = await UserCredits.findOne({ userId });
+
+        // Register new user if they don't exist
+        if (!user) {
+            user = new User({
+                userId: userId,
+                username: interaction.user.username
+            });
+            await user.save();
+        }
+
+        // Create collection if it doesn't exist
+        if (!userCollection) {
+            userCollection = new UserCollection({
+                userId: userId,
+                cards: []
+            });
+            await userCollection.save();
+        }
+
+        // Create credits if they don't exist
         if (!userCredits) {
-            userCredits = new UserCredits({ userId: interaction.user.id });
+            userCredits = new UserCredits({
+                userId: userId,
+                credits: 10 // Starting credits
+            });
+            await userCredits.save();
         }
 
+        // Check if user has enough credits
         if (userCredits.credits < config.packCost) {
-            await interaction.editReply(`You need ${config.packCost} ${config.currencyName} to open a pack. You currently have ${userCredits.credits} ${config.currencyName}. Use /tcg earn to earn more!`);
-            return;
+            return await interaction.editReply(`You don't have enough ${config.currencyName} to open a pack! You need ${config.packCost} ${config.currencyName}.`);
         }
 
+        // Deduct pack cost
         userCredits.credits -= config.packCost;
         await userCredits.save();
 
-        const commonCards = await Card.aggregate([
-            { $match: { rarity: 'common' } },
-            { $sample: { size: 3 } }
-        ]);
-
-        const uncommonCard = await Card.aggregate([
-            { $match: { rarity: 'uncommon' } },
-            { $sample: { size: 1 } }
-        ]);
-
-        const isLegendary = Math.random() < config.legendaryChance;
-        const rareOrLegendary = await Card.aggregate([
-            { $match: { rarity: isLegendary ? 'legendary' : 'rare' } },
-            { $sample: { size: 1 } }
-        ]);
-
-        const allCards = [...commonCards, ...uncommonCard, ...rareOrLegendary];
+        // Generate pack contents
+        const packContents = await generatePack();
         
-        let userCollection = await UserCollection.findOne({ userId: interaction.user.id });
+        // Add cards to collection and award XP
+        const xpResult = await user.addXp(10); // Award 10 XP for opening a pack
+        const addedCards = [];
         
-        if (!userCollection) {
-            userCollection = new UserCollection({
-                userId: interaction.user.id,
-                cards: []
-            });
-        }
-
-        const cardSpecialStatus = new Map();
-
-        for (const card of allCards) {
-            const isSpecial = config.canGenerateSpecialCards() && Math.random() < config.specialChance;
-            cardSpecialStatus.set(card._id.toString(), isSpecial);
-            
+        for (const card of packContents) {
             const existingCard = userCollection.cards.find(c => 
-                c.cardId.toString() === card._id.toString() && 
-                c.special === isSpecial
+                c.cardId && c.cardId.toString() === card._id.toString() && 
+                c.cardType === 'Card'
             );
-
             if (existingCard) {
                 existingCard.quantity += 1;
             } else {
                 userCollection.cards.push({
                     cardId: card._id,
+                    cardType: 'Card',
                     quantity: 1,
-                    special: isSpecial
+                    special: config.canGenerateSpecialCards() && Math.random() < config.specialChance
                 });
             }
+            addedCards.push(card);
         }
-
+        
         await userCollection.save();
 
-        let response = `**${interaction.user.username} opened a pack!**\n\n`;
-        response += `**Cards received:**\n`;
-        allCards.forEach(card => {
-            const rarityEmoji = {
-                common: '⚪',
-                uncommon: '🟢',
-                rare: '🔵',
-                legendary: '🟣'
-            }[card.rarity];
-            const isSpecial = cardSpecialStatus.get(card._id.toString());
-            const cardName = isSpecial ? `${config.specialPrefix} ${card.name}` : card.name;
-            response += `${rarityEmoji} ${cardName}\n`;
-            response += `*${card.description}*\n`;
-            response += `Set: **${card.set}**\n\n`;
-        });
+        // Create embed for response
+        const embed = {
+            color: 0x41E1F2,
+            title: '🎴 Pack Opening Results',
+            description: `You spent ${config.packCost} ${config.currencyName} to open a pack!`,
+            fields: [
+                {
+                    name: 'Cards Found',
+                    value: addedCards.map(card => 
+                        `${getRarityEmoji(card.rarity)} **${card.name}** (${capitalizeFirst(card.rarity)})`
+                    ).join('\n'),
+                    inline: false
+                },
+                {
+                    name: 'Experience Gained',
+                    value: `+${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`,
+                    inline: true
+                },
+                {
+                    name: 'New Balance',
+                    value: `${userCredits.credits} ${config.currencyName}`,
+                    inline: true
+                }
+            ],
+            footer: { 
+                text: `Progress to next level: ${xpResult.currentXp}/${xpResult.xpForNextLevel} XP` 
+            },
+            timestamp: new Date().toISOString()
+        };
 
-        await interaction.editReply(response);
+        await interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
         console.error('Error in /tcg open command:', error);
-        await interaction.editReply('There was an error opening your pack. Please try again later.');
+        await interaction.editReply('There was an error opening the pack. Please try again later.');
     }
 }
 

@@ -57,7 +57,10 @@ async function validateTradePermissions(interaction, targetUser) {
 
 async function validateCards(userId, cardNames, quantities = {}) {
     const userCollection = await UserCollection.findOne({ userId })
-        .populate('cards.cardId');
+        .populate({
+            path: 'cards.cardId',
+            refPath: 'cards.cardType'
+        });
     
     if (!userCollection) return { valid: false, message: 'You don\'t have any cards.' };
 
@@ -78,7 +81,7 @@ async function validateCards(userId, cardNames, quantities = {}) {
 
     for (const cardName of cards) {
         const card = userCollection.cards.find(c => 
-            c.cardId.name.toLowerCase() === cardName.toLowerCase()
+            c.cardId && c.cardId.name.toLowerCase() === cardName.toLowerCase()
         );
 
         if (!card) {
@@ -99,6 +102,7 @@ async function validateCards(userId, cardNames, quantities = {}) {
             const allCards = [...trade.initiatorCards, ...trade.targetCards];
             return allCards.some(t => 
                 t.cardId._id.toString() === card.cardId._id.toString() && 
+                t.cardType === card.cardType &&
                 t.quantity >= quantity
             );
         });
@@ -109,6 +113,7 @@ async function validateCards(userId, cardNames, quantities = {}) {
 
         validatedCards.push({
             cardId: card.cardId._id,
+            cardType: card.cardType,
             quantity: quantity
         });
     }
@@ -259,12 +264,21 @@ module.exports = {
 
                         // Execute the trade within transaction
                         for (const card of trade.initiatorCards) {
-                            const initiatorCard = initiatorCollection.cards.find(c => c.cardId.toString() === card.cardId.toString());
-                            const targetCard = targetCollection.cards.find(c => c.cardId.toString() === card.cardId.toString());
+                            const initiatorCard = initiatorCollection.cards.find(c => 
+                                c.cardId.toString() === card.cardId.toString() && 
+                                c.cardType === card.cardType
+                            );
+                            const targetCard = targetCollection.cards.find(c => 
+                                c.cardId.toString() === card.cardId.toString() && 
+                                c.cardType === card.cardType
+                            );
 
                             initiatorCard.quantity -= card.quantity;
                             if (initiatorCard.quantity <= 0) {
-                                initiatorCollection.cards = initiatorCollection.cards.filter(c => c !== initiatorCard);
+                                initiatorCollection.cards = initiatorCollection.cards.filter(c => 
+                                    c.cardId.toString() !== initiatorCard.cardId.toString() || 
+                                    c.cardType !== initiatorCard.cardType
+                                );
                             }
 
                             if (targetCard) {
@@ -272,6 +286,7 @@ module.exports = {
                             } else {
                                 targetCollection.cards.push({
                                     cardId: card.cardId,
+                                    cardType: card.cardType,
                                     quantity: card.quantity,
                                     special: false
                                 });
@@ -279,12 +294,21 @@ module.exports = {
                         }
 
                         for (const card of trade.targetCards) {
-                            const targetCard = targetCollection.cards.find(c => c.cardId.toString() === card.cardId.toString());
-                            const initiatorCard = initiatorCollection.cards.find(c => c.cardId.toString() === card.cardId.toString());
+                            const targetCard = targetCollection.cards.find(c => 
+                                c.cardId.toString() === card.cardId.toString() && 
+                                c.cardType === card.cardType
+                            );
+                            const initiatorCard = initiatorCollection.cards.find(c => 
+                                c.cardId.toString() === card.cardId.toString() && 
+                                c.cardType === card.cardType
+                            );
 
                             targetCard.quantity -= card.quantity;
                             if (targetCard.quantity <= 0) {
-                                targetCollection.cards = targetCollection.cards.filter(c => c !== targetCard);
+                                targetCollection.cards = targetCollection.cards.filter(c => 
+                                    c.cardId.toString() !== targetCard.cardId.toString() || 
+                                    c.cardType !== targetCard.cardType
+                                );
                             }
 
                             if (initiatorCard) {
@@ -292,6 +316,7 @@ module.exports = {
                             } else {
                                 initiatorCollection.cards.push({
                                     cardId: card.cardId,
+                                    cardType: card.cardType,
                                     quantity: card.quantity,
                                     special: false
                                 });
