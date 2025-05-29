@@ -34,19 +34,37 @@ async function execute(interaction) {
             if (!cardsByRarity[rarity]) {
                 cardsByRarity[rarity] = [];
             }
-            cardsByRarity[rarity].push({
-                name: card.cardId.name,
-                quantity: card.quantity,
-                special: card.special,
-                cardType: card.cardType
-            });
+
+            // Check if we already have this card (special or non-special)
+            const existingCardIndex = cardsByRarity[rarity].findIndex(c => 
+                c.name === card.cardId.name && c.special === card.special
+            );
+
+            if (existingCardIndex !== -1) {
+                // Update quantity of existing card
+                cardsByRarity[rarity][existingCardIndex].quantity += card.quantity;
+            } else {
+                // Add new card entry
+                cardsByRarity[rarity].push({
+                    name: card.cardId.name,
+                    quantity: card.quantity,
+                    special: card.special,
+                    cardType: card.cardType
+                });
+            }
         });
 
         // Create embed fields for each rarity
         const fields = [];
         for (const [rarity, cards] of Object.entries(cardsByRarity)) {
             const cardList = cards
-                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => {
+                    // First sort by name
+                    const nameCompare = a.name.localeCompare(b.name);
+                    if (nameCompare !== 0) return nameCompare;
+                    // Then sort by special status (non-special first)
+                    return a.special ? 1 : -1;
+                })
                 .map(card => {
                     const special = card.special ? '🌟 ' : '';
                     const fused = card.cardType === 'FusedCard' ? '🔮 ' : '';

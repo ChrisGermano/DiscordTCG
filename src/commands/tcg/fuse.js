@@ -343,7 +343,7 @@ async function execute(interaction) {
         const fusedCard = new FusedCard({
             name: fusedName,
             description: `A powerful fusion of ${card1.name} and ${card2.name}.`,
-            rarity: card1.rarity,
+            rarity: 'fused', // Changed from card1.rarity to 'fused'
             set: card1.set,
             power: Math.max(card1.power || 0, card2.power || 0) + 10,
             imageUrl: card1.imageUrl,

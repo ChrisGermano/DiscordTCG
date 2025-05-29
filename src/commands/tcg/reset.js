@@ -2,6 +2,7 @@ const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord-api-types/v9');
 const fs = require('fs').promises;
 const path = require('path');
+const fetch = require('node-fetch');
 const Card = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
@@ -9,6 +10,38 @@ const FusedCard = require('../../models/FusedCard');
 const Trade = require('../../models/Trade');
 const Battle = require('../../models/Battle');
 const User = require('../../models/User');
+
+async function generateCardImage(cardName) {
+    try {
+        const response = await fetch('https://pixelateimage.org/api/coze-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: cardName,
+                aspectRatio: "1:1",
+                pixelStyle: "Retro 8-bit Pixel Art",
+                colorPalette: "Game Boy (Original)",
+                compositionStyle: "Portrait Shot"
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.imageUrl) {
+            throw new Error('No image URL in response');
+        }
+
+        return data.imageUrl;
+    } catch (error) {
+        console.error('Error generating card image:', error);
+        throw error;
+    }
+}
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()
@@ -87,7 +120,7 @@ module.exports = {
                         const isValid = card && 
                             typeof card.name === 'string' && card.name.trim() !== '' &&
                             typeof card.rarity === 'string' && ['common', 'uncommon', 'rare', 'legendary'].includes(card.rarity.toLowerCase()) &&
-                            typeof card.imageUrl === 'string' && card.imageUrl.trim() !== '' &&
+                            typeof card.imageUrl === 'string' &&
                             typeof card.description === 'string' && card.description.trim() !== '';
                         
                         if (!isValid) {
@@ -101,17 +134,39 @@ module.exports = {
                     }
 
                     // Insert all valid cards from config
-                    const cardsToInsert = validCards.map(card => ({
-                        name: card.name.trim(),
-                        rarity: card.rarity.toLowerCase(),
-                        imageUrl: card.imageUrl.trim(),
-                        description: card.description.trim(),
-                        set: card.set?.trim() || 'Base Set',
-                        power: typeof card.power === 'number' ? card.power : 0,
-                        special: Boolean(card.special)
-                    }));
+                    const cardsToInsert = [];
+                    for (const card of validCards) {
+                        let imageUrl = card.imageUrl.trim();
+                        
+                        // If image URL is blank, generate a new one
+                        if (!imageUrl) {
+                            try {
+                                imageUrl = await generateCardImage(card.name.trim());
+                                console.log(`Generated image for card: ${card.name}`);
+                            } catch (error) {
+                                console.error(`Failed to generate image for card ${card.name}:`, error);
+                                // Continue with blank image URL if generation fails
+                            }
+                        }
 
-                    await Card.insertMany(cardsToInsert);
+                        cardsToInsert.push({
+                            name: card.name.trim(),
+                            rarity: card.rarity.toLowerCase(),
+                            imageUrl: imageUrl,
+                            description: card.description.trim(),
+                            set: card.set?.trim() || 'Base Set',
+                            power: typeof card.power === 'number' ? card.power : 0,
+                            special: Boolean(card.special)
+                        });
+                    }
+
+                    // Insert cards in batches to avoid overwhelming the database
+                    const batchSize = 10;
+                    for (let i = 0; i < cardsToInsert.length; i += batchSize) {
+                        const batch = cardsToInsert.slice(i, i + batchSize);
+                        await Card.insertMany(batch);
+                        console.log(`Inserted batch of ${batch.length} cards`);
+                    }
 
                     await interaction.followUp({
                         content: '✅ System reset complete!\n' +
@@ -120,7 +175,8 @@ module.exports = {
                             '• All user currency has been reset to 1000\n' +
                             '• All cards have been deleted and regenerated\n' +
                             '• All fused cards have been deleted\n' +
-                            '• All trades and battles have been cleared',
+                            '• All trades and battles have been cleared\n' +
+                            '• Generated new images for cards with blank URLs',
                         ephemeral: true
                     });
                 } catch (error) {
