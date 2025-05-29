@@ -48,7 +48,7 @@ function capitalizeFirst(string) {
 }
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     try {
         const userId = interaction.user.id;

@@ -237,7 +237,7 @@ async function addFusedCardToJson(fusedCard) {
 }
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     try {
         const card1Name = interaction.options.getString('card1');
@@ -335,7 +335,6 @@ async function execute(interaction) {
 
             return await interaction.editReply({
                 content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${existingFusion.name}!`,
-                ephemeral: true
             });
         }
 
@@ -383,7 +382,6 @@ async function execute(interaction) {
 
         await interaction.editReply({
             content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${fusedCard.name}!`,
-            ephemeral: true
         });
 
     } catch (error) {
