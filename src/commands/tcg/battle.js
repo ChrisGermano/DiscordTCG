@@ -43,7 +43,10 @@ async function execute(interaction) {
         }
 
         const challengerCollection = await UserCollection.findOne({ userId: interaction.user.id })
-            .populate('cards.cardId');
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
         
         if (!challengerCollection) {
             await interaction.editReply('You don\'t have any cards to battle with!');
@@ -51,7 +54,7 @@ async function execute(interaction) {
         }
 
         const challengerCard = challengerCollection.cards.find(c => 
-            c.cardId.name.toLowerCase() === cardName.toLowerCase() && 
+            c.cardId && c.cardId.name.toLowerCase() === cardName.toLowerCase() && 
             c.quantity > 0
         );
 
@@ -61,7 +64,10 @@ async function execute(interaction) {
         }
 
         const defenderCollection = await UserCollection.findOne({ userId: opponent.id })
-            .populate('cards.cardId');
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
 
         if (!defenderCollection || defenderCollection.cards.length === 0) {
             await interaction.editReply(`${opponent.username} doesn't have any cards to battle with!`);
@@ -72,6 +78,7 @@ async function execute(interaction) {
             challengerId: interaction.user.id,
             defenderId: opponent.id,
             challengerCardId: challengerCard.cardId._id,
+            challengerCardType: challengerCard.cardType,
             status: 'pending'
         });
 

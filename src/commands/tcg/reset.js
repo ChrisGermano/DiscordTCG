@@ -8,6 +8,7 @@ const UserCredits = require('../../models/UserCredits');
 const FusedCard = require('../../models/FusedCard');
 const Trade = require('../../models/Trade');
 const Battle = require('../../models/Battle');
+const User = require('../../models/User');
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()
@@ -57,6 +58,16 @@ module.exports = {
                     // Reset all user collections
                     await UserCollection.deleteMany({});
                     console.log('Deleted all user collections');
+
+                    // Reset all user XP and level
+                    const users = await User.find({});
+                    for (const user of users) {
+                        user.xp = 0;
+                        user.level = 1;
+                        user.lastXpGain = null;
+                        await user.save();
+                    }
+                    console.log('Reset all user XP and levels');
 
                     // Reset all user credits to default
                     await UserCredits.updateMany({}, {
@@ -116,6 +127,7 @@ module.exports = {
                     await interaction.followUp({
                         content: '✅ System reset complete!\n' +
                             '• All user collections have been cleared\n' +
+                            '• All user XP and levels have been reset\n' +
                             '• All user currency has been reset to 1000\n' +
                             '• All cards have been deleted and regenerated\n' +
                             '• All fused cards have been deleted\n' +

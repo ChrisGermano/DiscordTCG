@@ -9,8 +9,13 @@ const userCollectionSchema = new mongoose.Schema({
     cards: [{
         cardId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Card',
+            refPath: 'cards.cardType',
             required: true
+        },
+        cardType: {
+            type: String,
+            required: true,
+            enum: ['Card', 'FusedCard']
         },
         quantity: {
             type: Number,
@@ -23,5 +28,8 @@ const userCollectionSchema = new mongoose.Schema({
         }
     }]
 });
+
+// Add a compound index for efficient card lookups
+userCollectionSchema.index({ userId: 1, 'cards.cardId': 1, 'cards.cardType': 1 }, { unique: true });
 
 module.exports = mongoose.model('UserCollection', userCollectionSchema); 

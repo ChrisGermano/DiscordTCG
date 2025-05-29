@@ -57,6 +57,11 @@ const COMMANDS = {
                 example: '/tcg trade cancel "123e4567-e89b-12d3-a456-426614174000"'
             }
         }
+    },
+    inspect: {
+        description: 'View detailed information about a specific card in your collection',
+        usage: '/tcg inspect card_name',
+        example: '/tcg inspect "Dragon"'
     }
 };
 

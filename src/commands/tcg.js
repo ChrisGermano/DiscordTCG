@@ -13,6 +13,7 @@ const viewCommand = require('./tcg/view');
 const profileCommand = require('./tcg/profile');
 const fuseCommand = require('./tcg/fuse');
 const tradeCommand = require('./tcg/trade');
+const inspectCommand = require('./tcg/inspect');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -31,6 +32,7 @@ module.exports = {
         .addSubcommand(viewCommand.data)
         .addSubcommand(profileCommand.data)
         .addSubcommand(fuseCommand.data)
+        .addSubcommand(inspectCommand.data)
         .addSubcommandGroup(group => group
             .setName('trade')
             .setDescription('Trade cards with other users')
@@ -120,7 +122,8 @@ module.exports = {
             'help': helpCommand,
             'view': viewCommand,
             'profile': profileCommand,
-            'fuse': fuseCommand
+            'fuse': fuseCommand,
+            'inspect': inspectCommand
         }[subcommand];
 
         if (command) {
