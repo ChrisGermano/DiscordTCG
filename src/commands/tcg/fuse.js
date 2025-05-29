@@ -6,6 +6,8 @@ const UserCollection = require('../../models/UserCollection');
 const mongoose = require('mongoose');
 const User = require('../../models/User');
 const fetch = require('node-fetch');
+const fs = require('fs').promises;
+const path = require('path');
 
 function findLongestCommonEnding(str1, str2) {
     const words1 = str1.split(' ');
@@ -204,122 +206,189 @@ async function checkFusion(card1, card2, userId) {
     };
 }
 
+async function addFusedCardToJson(fusedCard) {
+    try {
+        const jsonPath = path.join(__dirname, '../../data/fusedcards.json');
+        const jsonData = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
+        
+        // Create a simplified version of the fused card for the JSON
+        const fusedCardData = {
+            id: fusedCard._id.toString(),
+            name: fusedCard.name,
+            description: fusedCard.description,
+            rarity: fusedCard.rarity,
+            set: fusedCard.set,
+            power: fusedCard.power,
+            imageUrl: fusedCard.imageUrl,
+            fusedBy: fusedCard.fusedBy,
+            parentCards: fusedCard.parentCards.map(parent => ({
+                cardId: parent.cardId.toString(),
+                quantity: parent.quantity
+            })),
+            createdAt: new Date().toISOString()
+        };
+
+        jsonData.fusedCards.push(fusedCardData);
+        await fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2));
+    } catch (error) {
+        console.error('Error writing to fusedcards.json:', error);
+        // Don't throw the error - we don't want to break the fusion process if JSON writing fails
+    }
+}
+
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-        const userId = interaction.user.id;
-        let user = await User.findOne({ userId });
-        let userCollection = await UserCollection.findOne({ userId })
-            .populate('cards.cardId'); // Populate the card data
-
-        // Register new user if they don't exist
-        if (!user) {
-            user = new User({
-                userId: userId,
-                username: interaction.user.username
-            });
-            await user.save();
-        }
-
-        // Create collection if it doesn't exist
-        if (!userCollection) {
-            userCollection = new UserCollection({
-                userId: userId,
-                cards: []
-            });
-            await userCollection.save();
-        }
-
         const card1Name = interaction.options.getString('card1');
         const card2Name = interaction.options.getString('card2');
+        const userId = interaction.user.id;
 
-        // Find the cards in the user's collection
-        const card1 = userCollection.cards.find(c => 
-            c.cardId && c.cardId.name.toLowerCase() === card1Name.toLowerCase()
+        // Find user's collection
+        const userCollection = await UserCollection.findOne({ userId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
+
+        if (!userCollection) {
+            return await interaction.editReply('You don\'t have any cards in your collection yet!');
+        }
+
+        // Find both cards in the user's collection
+        const card1Entry = userCollection.cards.find(card => 
+            card.cardId && card.cardId.name && card.cardId.name.toLowerCase() === card1Name.toLowerCase()
         );
-        const card2 = userCollection.cards.find(c => 
-            c.cardId && c.cardId.name.toLowerCase() === card2Name.toLowerCase()
+        const card2Entry = userCollection.cards.find(card => 
+            card.cardId && card.cardId.name && card.cardId.name.toLowerCase() === card2Name.toLowerCase()
         );
 
-        if (!card1 || !card2) {
+        if (!card1Entry || !card2Entry) {
             return await interaction.editReply('One or both cards not found in your collection!');
         }
 
-        if (card1.quantity < 1 || card2.quantity < 1) {
-            return await interaction.editReply('You don\'t have enough copies of one or both cards to fuse!');
+        // Check if either card is already fused
+        if (card1Entry.cardType === 'FusedCard' || card2Entry.cardType === 'FusedCard') {
+            return await interaction.editReply('You cannot fuse cards that are already fused!');
         }
 
-        // Update the checkFusion call to include userId
-        const fusionResult = await checkFusion(card1.cardId, card2.cardId, userId);
-        if (!fusionResult.canFuse) {
-            return await interaction.editReply(fusionResult.message);
+        // Check if trying to fuse the same card
+        if (card1Entry.cardId._id.toString() === card2Entry.cardId._id.toString()) {
+            return await interaction.editReply('You cannot fuse a card with itself!');
         }
 
-        // Remove the cards being fused
-        card1.quantity -= 1;
-        card2.quantity -= 1;
-        if (card1.quantity === 0) {
-            userCollection.cards = userCollection.cards.filter(c => c.cardId.toString() !== card1.cardId.toString());
-        }
-        if (card2.quantity === 0) {
-            userCollection.cards = userCollection.cards.filter(c => c.cardId.toString() !== card2.cardId.toString());
+        const card1 = card1Entry.cardId;
+        const card2 = card2Entry.cardId;
+
+        // Check if cards are from the same set
+        if (card1.set !== card2.set) {
+            return await interaction.editReply('You can only fuse cards from the same set!');
         }
 
-        // Add the fused card
-        const existingFusedCard = userCollection.cards.find(c => 
-            c.cardId && c.cardId.toString() === fusionResult.fusedCard._id.toString() && 
-            c.cardType === 'FusedCard'
-        );
-        if (existingFusedCard) {
-            existingFusedCard.quantity += 1;
-        } else {
-            userCollection.cards.push({
-                cardId: fusionResult.fusedCard._id,
-                cardType: 'FusedCard',
-                quantity: 1,
-                special: true
+        // Check if cards are of the same rarity
+        if (card1.rarity !== card2.rarity) {
+            return await interaction.editReply('You can only fuse cards of the same rarity!');
+        }
+
+        // Generate fused card name
+        const fusedName = generateFusedName(card1.name, card2.name);
+
+        // Check if this fusion already exists
+        const existingFusion = await FusedCard.findOne({
+            'parentCards.cardId': { 
+                $all: [card1._id, card2._id]
+            }
+        });
+
+        if (existingFusion) {
+            // Check if user already has this fused card
+            const existingUserFusion = userCollection.cards.find(card => 
+                card.cardId && card.cardId._id.toString() === existingFusion._id.toString()
+            );
+
+            if (existingUserFusion) {
+                existingUserFusion.quantity += 1;
+            } else {
+                userCollection.cards.push({
+                    cardId: existingFusion._id,
+                    cardType: 'FusedCard',
+                    quantity: 1,
+                    special: true
+                });
+            }
+
+            await userCollection.save();
+
+            // Remove the cards used for fusion
+            card1Entry.quantity -= 1;
+            card2Entry.quantity -= 1;
+
+            // Remove cards with zero quantity
+            userCollection.cards = userCollection.cards.filter(card => card.quantity > 0);
+            await userCollection.save();
+
+            // Award XP for fusing
+            const user = await User.findOne({ userId });
+            if (user) {
+                await user.addXp(100); // Award 100 XP for fusing
+            }
+
+            return await interaction.editReply({
+                content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${existingFusion.name}!`,
+                ephemeral: true
             });
         }
 
-        // Award XP for fusing
-        const xpResult = await user.addXp(100); // Award 100 XP for fusing
+        // Create new fused card
+        const fusedCard = new FusedCard({
+            name: fusedName,
+            description: `A powerful fusion of ${card1.name} and ${card2.name}.`,
+            rarity: card1.rarity,
+            set: card1.set,
+            power: Math.max(card1.power || 0, card2.power || 0) + 10,
+            imageUrl: card1.imageUrl,
+            parentCards: [
+                { cardId: card1._id, quantity: 1 },
+                { cardId: card2._id, quantity: 1 }
+            ],
+            fusedBy: userId
+        });
 
+        await fusedCard.save();
+        
+        // Add the fused card to the JSON file
+        await addFusedCardToJson(fusedCard);
+
+        // Add the fused card to user's collection
+        userCollection.cards.push({
+            cardId: fusedCard._id,
+            cardType: 'FusedCard',
+            quantity: 1,
+            special: true
+        });
+
+        // Remove the cards used for fusion
+        card1Entry.quantity -= 1;
+        card2Entry.quantity -= 1;
+
+        // Remove cards with zero quantity
+        userCollection.cards = userCollection.cards.filter(card => card.quantity > 0);
         await userCollection.save();
 
-        // Create embed for response
-        const embed = {
-            color: getRarityColor('fused'),
-            title: '✨ Fusion Results',
-            description: 'You successfully fused your cards!',
-            fields: [
-                {
-                    name: 'Cards Fused',
-                    value: `${getRarityEmoji(card1.cardId.rarity)} **${card1.cardId.name}**\n${getRarityEmoji(card2.cardId.rarity)} **${card2.cardId.name}**`,
-                    inline: true
-                },
-                {
-                    name: 'New Card',
-                    value: `${getRarityEmoji('fused')} **${fusionResult.fusedCard.name}** (Fused)`,
-                    inline: true
-                },
-                {
-                    name: 'Experience Gained',
-                    value: `+${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`,
-                    inline: true
-                }
-            ],
-            footer: { 
-                text: `Progress to next level: ${xpResult.currentXp}/${xpResult.xpForNextLevel} XP` 
-            },
-            timestamp: new Date().toISOString()
-        };
+        // Award XP for fusing
+        const user = await User.findOne({ userId });
+        if (user) {
+            await user.addXp(100); // Award 100 XP for fusing
+        }
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({
+            content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${fusedCard.name}!`,
+            ephemeral: true
+        });
 
     } catch (error) {
         console.error('Error in /tcg fuse command:', error);
-        await interaction.editReply('There was an error fusing your cards. Please try again later.');
+        await interaction.editReply('There was an error fusing the cards. Please try again later.');
     }
 }
 

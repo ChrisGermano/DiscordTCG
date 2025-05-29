@@ -1,124 +1,12 @@
 {
     "cards": [
         {
-            "name": "Sleepy Vlad",
-            "rarity": "common",
-            "imageUrl": "https://i.imgur.com/coffee-mug.jpg",
-            "description": "Vlad, lacking a proper night's sleep.",
-            "set": "1st Edition",
+            "name": "",
+            "rarity": "",
+            "imageUrl": "",
+            "description": "",
+            "set": "",
             "power": 0
-        },
-        {
-            "name": "Dry Vlad",
-            "rarity": "common",
-            "imageUrl": "https://i.imgur.com/water-bottle.jpg",
-            "description": "Dehydrated as always...",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Pharmacy Vlad",
-            "rarity": "common",
-            "imageUrl": "https://i.imgur.com/keyboard.jpg",
-            "description": "Floor sweepings, five dollars.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Horny Vlad",
-            "rarity": "common",
-            "imageUrl": "https://i.imgur.com/mouse.jpg",
-            "description": "Show feet pls. Will tip.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Black Vlad",
-            "rarity": "uncommon",
-            "imageUrl": "https://i.imgur.com/monitor-stand.jpg",
-            "description": "He can say it but he still won't.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Ballroom Vlad",
-            "rarity": "uncommon",
-            "imageUrl": "https://i.imgur.com/cable-kit.jpg",
-            "description": "As elegant as a swan choking on a perogi.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Spice Vlad",
-            "rarity": "rare",
-            "imageUrl": "https://i.imgur.com/gaming-pc.jpg",
-            "description": "Basically bath salts Vlad.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Rooftop Vlad",
-            "rarity": "rare",
-            "imageUrl": "https://i.imgur.com/gaming-monitor.jpg",
-            "description": "Easy to get up, hard to get down.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Haxenspreizer Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/vlad-setup.jpg",
-            "description": "Not to be confused with zirbenschnapps",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Leather Daddy Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/golden-rig.jpg",
-            "description": "Now he means business.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Elevator Pooping Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/streaming-station.jpg",
-            "description": "Runs run in the family.",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Smushin' Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/gaming-throne.jpg",
-            "description": "Oh boy we fuckin",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Boofing Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/gaming-throne.jpg",
-            "description": "Wow, everything fits up there!",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Sounding' Vlad",
-            "rarity": "legendary",
-            "imageUrl": "https://i.imgur.com/gaming-throne.jpg",
-            "description": "Why is it called sounding if it's just moans?",
-            "set": "1st Edition",
-            "power": 0
-        },
-        {
-            "name": "Fart Vlad",
-            "rarity": "uncommon",
-            "imageUrl": "https://placehold.co/600x400",
-            "description": "Vlad, but with gas.",
-            "set": "1st Edition",
-            "power": 1
         }
     ]
 }
