@@ -70,16 +70,39 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction) {
     try {
-        const subcommand = interaction.options.getSubcommand();
-        const subcommandGroup = interaction.options.getSubcommandGroup();
+        const subcommand = interaction.options.getSubcommand(false);
+        let subcommandGroup = null;
 
-        // Handle trade command group separately
+        try {
+            subcommandGroup = interaction.options.getSubcommandGroup(false);
+        } catch (error) {
+            // No subcommand group, which is fine for regular commands
+        }
+
+        // Handle trade command group
         if (subcommandGroup === 'trade') {
             return await tradeCommand.execute(interaction);
         }
 
-        // Handle other subcommands
-        const command = require(`./tcg/${subcommand}`);
+        // Handle regular subcommands
+        const commandMap = {
+            'open': openCommand,
+            'showcollection': showcollectionCommand,
+            'earn': earnCommand,
+            'tradeup': tradeupCommand,
+            'givecurrency': givecurrencyCommand,
+            'reset': resetCommand,
+            'createcard': createCardCommand,
+            'battle': battleCommand,
+            'accept': acceptCommand,
+            'help': helpCommand,
+            'view': viewCommand,
+            'profile': profileCommand,
+            'fuse': fuseCommand,
+            'inspect': inspectCommand
+        };
+
+        const command = commandMap[subcommand];
         if (!command || typeof command.execute !== 'function') {
             throw new Error(`Unknown subcommand: ${subcommand}`);
         }

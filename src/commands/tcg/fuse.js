@@ -6,6 +6,8 @@ const UserCollection = require('../../models/UserCollection');
 const mongoose = require('mongoose');
 const User = require('../../models/User');
 const fetch = require('node-fetch');
+const fs = require('fs').promises;
+const path = require('path');
 
 function findLongestCommonEnding(str1, str2) {
     const words1 = str1.split(' ');
@@ -204,6 +206,36 @@ async function checkFusion(card1, card2, userId) {
     };
 }
 
+async function addFusedCardToJson(fusedCard) {
+    try {
+        const jsonPath = path.join(__dirname, '../../data/fusedcards.json');
+        const jsonData = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
+        
+        // Create a simplified version of the fused card for the JSON
+        const fusedCardData = {
+            id: fusedCard._id.toString(),
+            name: fusedCard.name,
+            description: fusedCard.description,
+            rarity: fusedCard.rarity,
+            set: fusedCard.set,
+            power: fusedCard.power,
+            imageUrl: fusedCard.imageUrl,
+            fusedBy: fusedCard.fusedBy,
+            parentCards: fusedCard.parentCards.map(parent => ({
+                cardId: parent.cardId.toString(),
+                quantity: parent.quantity
+            })),
+            createdAt: new Date().toISOString()
+        };
+
+        jsonData.fusedCards.push(fusedCardData);
+        await fs.writeFile(jsonPath, JSON.stringify(jsonData, null, 2));
+    } catch (error) {
+        console.error('Error writing to fusedcards.json:', error);
+        // Don't throw the error - we don't want to break the fusion process if JSON writing fails
+    }
+}
+
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
@@ -314,7 +346,7 @@ async function execute(interaction) {
             rarity: card1.rarity,
             set: card1.set,
             power: Math.max(card1.power || 0, card2.power || 0) + 10,
-            imageUrl: card1.imageUrl, // You might want to generate a new image
+            imageUrl: card1.imageUrl,
             parentCards: [
                 { cardId: card1._id, quantity: 1 },
                 { cardId: card2._id, quantity: 1 }
@@ -323,6 +355,9 @@ async function execute(interaction) {
         });
 
         await fusedCard.save();
+        
+        // Add the fused card to the JSON file
+        await addFusedCardToJson(fusedCard);
 
         // Add the fused card to user's collection
         userCollection.cards.push({
