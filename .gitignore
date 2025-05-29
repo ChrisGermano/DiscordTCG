@@ -64,3 +64,8 @@ out/
 
 # Debug files
 .debug/
+
+# Card data
+cards.json
+data/cards.json
+data/fusedcards.json
