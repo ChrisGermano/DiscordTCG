@@ -2,7 +2,6 @@ const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord-api-types/v9');
 const fs = require('fs').promises;
 const path = require('path');
-const fetch = require('node-fetch');
 const Card = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
@@ -10,38 +9,8 @@ const FusedCard = require('../../models/FusedCard');
 const Trade = require('../../models/Trade');
 const Battle = require('../../models/Battle');
 const User = require('../../models/User');
-
-async function generateCardImage(cardName) {
-    try {
-        const response = await fetch('https://pixelateimage.org/api/coze-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: cardName,
-                aspectRatio: "1:1",
-                pixelStyle: "Retro 8-bit Pixel Art",
-                colorPalette: "Game Boy (Original)",
-                compositionStyle: "Portrait Shot"
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.imageUrl) {
-            throw new Error('No image URL in response');
-        }
-
-        return data.imageUrl;
-    } catch (error) {
-        console.error('Error generating card image:', error);
-        throw error;
-    }
-}
+const { generateCardImage } = require('../../utils/cardUtils');
+const config = require('../../config/config');
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()
@@ -99,7 +68,7 @@ module.exports = {
                     // Reset all user credits to default
                     await UserCredits.updateMany({}, {
                         $set: {
-                            credits: 1000, // Default starting currency
+                            credits: config.defaultCredits, // Use default credits from config
                             lastEarnTime: null
                         }
                     });
@@ -172,7 +141,7 @@ module.exports = {
                         content: '✅ System reset complete!\n' +
                             '• All user collections have been cleared\n' +
                             '• All user XP and levels have been reset\n' +
-                            '• All user currency has been reset to 1000\n' +
+                            `• All user currency has been reset to ${config.defaultCredits}\n` +
                             '• All cards have been deleted and regenerated\n' +
                             '• All fused cards have been deleted\n' +
                             '• All trades and battles have been cleared\n' +
