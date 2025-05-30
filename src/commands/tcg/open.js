@@ -4,6 +4,7 @@ const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
 const config = require('../../config/config');
 const User = require('../../models/User');
+const { createPackImage } = require('../../utils/imageUtils');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('open')
@@ -136,6 +137,10 @@ async function execute(interaction) {
         
         await userCollection.save();
 
+        // Create the combined pack image
+        const cardUrls = packContents.map(card => card.imageUrl);
+        const packImageBuffer = await createPackImage(cardUrls);
+
         // Create embed for response
         const cardsFoundValue = addedCards.map(card => {
             const cardString = `${getRarityEmoji(card.rarity)} **${card.name}** (${capitalizeFirst(card.rarity)})`;
@@ -195,7 +200,15 @@ async function execute(interaction) {
             timestamp: new Date().toISOString()
         };
 
-        await interaction.editReply({ embeds: [embed] });
+        // Send the response with both the embed and the pack image
+        await interaction.editReply({
+            embeds: [embed],
+            files: [{
+                attachment: packImageBuffer,
+                name: 'pack-opening.png',
+                description: 'Your opened pack of cards'
+            }]
+        });
 
     } catch (error) {
         console.error('Error in /tcg open command:', error);
