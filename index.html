@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-E6PLM9VL49"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-E6PLM9VL49');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DiscordTCG - A Discord Trading Card Game bot that brings the joy of card collecting to your community. Create, collect, trade, and battle with unique cards in your Discord server.">
+    <meta name="keywords" content="DiscordTCG, Discord Trading Card Game, Discord bot, card game, trading cards, collectible cards, Discord card game, TCG bot">
+    <meta name="author" content="Chris Germano">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="DiscordTCG - Discord Trading Card Game Bot">
+    <meta property="og:description" content="Transform your Discord community with a fully-featured trading card game. Create, collect, trade, and battle with unique cards!">
+    <meta property="og:image" content="logo.webp">
+    <meta property="og:url" content="https://github.com/ChrisGermano/DiscordTCG">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DiscordTCG - Discord Trading Card Game Bot">
+    <meta name="twitter:description" content="Transform your Discord community with a fully-featured trading card game. Collect, create, trade, and battle with unique cards!">
+    <meta name="twitter:image" content="logo.webp">
+    
+    <title>DiscordTCG - Discord Trading Card Game Bot | Collect, Create, Trade, and Battle</title>
+    
+    <!-- Add Vanta.js dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DiscordTCG",
+        "applicationCategory": "Game",
+        "operatingSystem": "Discord",
+        "description": "A Discord Trading Card Game bot that brings the joy of card collecting to your community. Create, trade, and battle with unique cards in your Discord server.",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "author": {
+            "@type": "Person",
+            "name": "Chris Germano"
+        },
+        "url": "https://github.com/ChrisGermano/DiscordTCG"
+    }
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #36393f;
+            font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #vanta-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .profile-card {
+            background-color: rgba(47, 49, 54, 0.95);
+            border-radius: 8px;
+            padding: 20px;
+            width: 340px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            margin-right: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #5865f2;
+            border-radius: 50%;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+            display: block;
+        }
+
+        .avatar-status {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #3ba55c;
+            border: 4px solid #2f3136;
+            z-index: 1;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .username {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-tag {
+            color: #b9bbbe;
+            font-size: 14px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background-color: #36393f;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #b9bbbe;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: #5865f2;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .profile-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #40444b;
+            text-align: center;
+            color: #b9bbbe;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="vanta-bg"></div>
+    <main class="profile-card" role="main">
+        <header class="profile-header">
+            <figure class="avatar">
+                <div class="avatar-background"></div>
+                <img src="logo.webp" alt="DiscordTCG Logo - Discord Trading Card Game Bot" width="80" height="80">
+                <div class="avatar-status" aria-label="Bot Status: Online"></div>
+            </figure>
+            <div class="user-info">
+                <h1 class="username">DiscordTCG</h1>
+                <p class="user-tag">Make your community collectible</p>
+                <a href="https://github.com/ChrisGermano/DiscordTCG" class="badge" aria-label="Start collecting cards with DiscordTCG">Learn More</a>
+            </div>
+        </header>
+        <section class="profile-stats" aria-label="Bot Features">
+            <div class="stat-item">
+                <div class="stat-label">Features</div>
+                <div class="stat-value">15</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Last Updated</div>
+                <div class="stat-value">2025-05-30</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Cost</div>
+                <div class="stat-value">Free</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Possibilities</div>
+                <div class="stat-value">Infinite</div>
+            </div>
+        </section>
+        <footer class="profile-footer">
+            Want a fully managed solution instead of setting it up yourself? A premium version is coming soon!
+        </footer>
+    </main>
+
+    <script>
+        VANTA.WAVES({
+            el: "#vanta-bg",
+            mouseControls: false,
+            touchControls: false,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x5865f2,
+            shininess: 0,
+            waveHeight: 20,
+            waveSpeed: 0.5,
+            zoom: 0.75
+        });
+    </script>
+</body>
+</html>

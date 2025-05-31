@@ -9,6 +9,8 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
 - Special variant cards with unique prefixes
 - Card attributes: name, rarity, image, description, set, power
 - Card collection management with quantity tracking
+- Visual card display with combined pack opening images
+- Automatic image generation for cards without images
 
 ### Trading System
 - Direct card trading between users
@@ -23,20 +25,38 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
 ### Economy
 - Virtual currency system
 - Pack opening system with configurable costs
-- Daily currency earning through `/tcg earn` (12-hour cooldown)
+- Daily currency earning through `/tcg earn` (configurable cooldown)
+- Configurable starting currency amount
+- Configurable pack costs and legendary card chances
+
+### Battle System
+- Card battles between users
+- Power-based combat system
+- Battle history tracking
+- Automatic battle resolution
+- Battle rewards and XP gain
 
 ### Commands
-- `/tcg open` - Open a card pack
-- `/tcg showcollection` - View your card collection
-- `/tcg tradeup` - Trade 5 cards for one higher rarity card
+- `/tcg open` - Open a card pack (now includes visual card display)
+- `/tcg view` - View your card collection with optional rarity and set filters
+- `/tcg profile` - View your collection statistics and card breakdown
+- `/tcg inspect` - View detailed information about a specific card
+- `/tcg battle` - Challenge another user to a card battle
+- `/tcg accept` - Accept a battle challenge
 - `/tcg earn` - Earn currency (cooldown-based)
 - `/tcg createcard` - Admin command to create new cards
-- `/tcg givecurrency` - Admin command to manage currency
-- `/tcg resetcollections` - Admin command to reset game state
+- `/tcg reset` - Admin command to reset the entire TCG system
 - `/tcg trade` - Trade cards with other users
   - `/tcg trade offer <cards> <for> <user>` - Offer a trade to another user
   - `/tcg trade accept <trade_id>` - Accept a trade offer
   - `/tcg trade cancel <trade_id>` - Cancel a trade offer
+
+### Visual Features
+- Combined card images for pack openings
+- Consistent card sizing and spacing
+- Discord dark theme integration
+- Placeholder images for cards without images
+- Automatic image processing and optimization
 
 ### Trading System Details
 
@@ -140,6 +160,7 @@ A Discord bot framework for building and managing a Trading Card Game (TCG) syst
 - Node.js with Discord.js v13
 - MongoDB for data persistence
 - Mongoose for data modeling
+- Sharp for image processing
 - Slash command architecture
 
 ## Setup
@@ -164,6 +185,8 @@ Create a `.env` file in the root directory with the following variables:
 - `SPECIAL_CHANCE` - Chance to generate a special variant card (default: 0.1, 10%)
 - `LEGENDARY_CHANCE` - Chance to get a legendary card in a pack (default: 0.01, 1%)
 - `SPECIAL_PREFIX` - Prefix for special variant cards (default: null, disabled)
+- `BATTLE_COOLDOWN` - Cooldown between battles in milliseconds (default: 300000, 5 minutes)
+- `BATTLE_XP_REWARD` - XP gained from battles (default: 5)
 
 Example `.env` file:
 ```env
@@ -177,6 +200,8 @@ EARN_COOLDOWN=43200000
 SPECIAL_CHANCE=0.1
 LEGENDARY_CHANCE=0.01
 SPECIAL_PREFIX=Shiny
+BATTLE_COOLDOWN=300000
+BATTLE_XP_REWARD=5
 ```
 
 ## Discord Bot Setup
@@ -218,3 +243,23 @@ SPECIAL_PREFIX=Shiny
 Note: The bot requires the following Discord permissions to function:
 - `Send Messages`: To send card information and responses
 - `Use Slash Commands`: To register and use the TCG commands
+
+## Image Processing
+The bot uses the Sharp library for image processing with the following features:
+- Automatic resizing of card images to consistent dimensions
+- Horizontal composition of pack opening images
+- Proper padding and spacing between cards
+- Discord dark theme background integration
+- Placeholder images for cards without images
+- Error handling for failed image fetches
+- PNG format for optimal quality and transparency
+
+## Recent Updates
+- Added visual pack opening display
+- Implemented card battle system
+- Added card inspection command
+- Improved collection viewing with filters
+- Added profile command for statistics
+- Centralized image processing utilities
+- Enhanced error handling and logging
+- Added automatic image generation for cards without images
