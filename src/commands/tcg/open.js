@@ -138,8 +138,17 @@ async function execute(interaction) {
         await userCollection.save();
 
         // Create the combined pack image
-        const cardUrls = packContents.map(card => card.imageUrl);
-        const packImageBuffer = await createPackImage(cardUrls);
+        const cardData = packContents.map((card, index) => {
+            const userCard = userCollection.cards.find(c => 
+                c.cardId && c.cardId.toString() === card._id.toString() && 
+                c.cardType === 'Card'
+            );
+            return {
+                url: card.imageUrl,
+                isSpecial: userCard && userCard.special
+            };
+        });
+        const packImageBuffer = await createPackImage(cardData);
 
         // Create embed for response
         const cardsFoundValue = addedCards.map((card, index) => {

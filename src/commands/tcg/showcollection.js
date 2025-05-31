@@ -35,23 +35,13 @@ async function execute(interaction) {
                 cardsByRarity[rarity] = [];
             }
 
-            // Check if we already have this card (special or non-special)
-            const existingCardIndex = cardsByRarity[rarity].findIndex(c => 
-                c.name === card.cardId.name && c.special === card.special
-            );
-
-            if (existingCardIndex !== -1) {
-                // Update quantity of existing card
-                cardsByRarity[rarity][existingCardIndex].quantity += card.quantity;
-            } else {
-                // Add new card entry
-                cardsByRarity[rarity].push({
-                    name: card.cardId.name,
-                    quantity: card.quantity,
-                    special: card.special,
-                    cardType: card.cardType
-                });
-            }
+            // Add new card entry (no longer combining special and non-special)
+            cardsByRarity[rarity].push({
+                name: card.cardId.name,
+                quantity: card.quantity,
+                special: card.special,
+                cardType: card.cardType
+            });
         });
 
         // Create embed fields for each rarity
@@ -68,7 +58,8 @@ async function execute(interaction) {
                 .map(card => {
                     const special = card.special ? `${config.specialPrefix} ` : '';
                     const fused = card.cardType === 'FusedCard' ? '🔮 ' : '';
-                    return `${special}${fused}${card.name} (${card.quantity})`;
+                    const rarityIndicator = card.special ? '✨ ' : ''; // Add sparkle for special cards
+                    return `${rarityIndicator}${special}${fused}${card.name} (${card.quantity})`;
                 })
                 .join('\n');
 

@@ -7,15 +7,19 @@ const BACKGROUND_COLOR = { r: 54, g: 57, b: 63, alpha: 1 }; // Discord dark them
 
 /**
  * Creates a placeholder image for cards without an image URL
+ * @param {boolean} isSpecial - Whether this is a special card
  * @returns {Promise<Buffer>} Buffer containing the placeholder image
  */
-async function createPlaceholderImage() {
+async function createPlaceholderImage(isSpecial = false) {
+    const baseColor = { r: 255, g: 255, b: 255, alpha: 1 }; // White background
+    const color = isSpecial ? { r: 0, g: 0, b: 0, alpha: 1 } : baseColor; // Black for special cards
+
     return sharp({
         create: {
             width: CARD_HEIGHT * 0.7, // Maintain card-like aspect ratio
             height: CARD_HEIGHT,
             channels: 4,
-            background: { r: 255, g: 255, b: 255, alpha: 1 } // White background
+            background: color
         }
     })
     .png()
@@ -25,42 +29,48 @@ async function createPlaceholderImage() {
 /**
  * Processes a single card image, resizing it to the standard height
  * @param {string} imageUrl - URL of the card image
+ * @param {boolean} isSpecial - Whether this is a special card
  * @returns {Promise<Buffer>} Buffer containing the processed image
  */
-async function processCardImage(imageUrl) {
+async function processCardImage(imageUrl, isSpecial = false) {
     try {
         if (!imageUrl) {
-            return createPlaceholderImage();
+            return createPlaceholderImage(isSpecial);
         }
 
         // Fetch and process the image
         const response = await fetch(imageUrl);
         if (!response.ok) {
             console.warn(`Failed to fetch image from ${imageUrl}`);
-            return createPlaceholderImage();
+            return createPlaceholderImage(isSpecial);
         }
 
         const imageBuffer = await response.arrayBuffer();
-        return sharp(Buffer.from(imageBuffer))
-            .resize({ height: CARD_HEIGHT, fit: 'contain' })
-            .png()
-            .toBuffer();
+        let image = sharp(Buffer.from(imageBuffer))
+            .resize({ height: CARD_HEIGHT, fit: 'contain' });
+
+        // Invert colors for special cards
+        if (isSpecial) {
+            image = image.negate();
+        }
+
+        return image.png().toBuffer();
     } catch (error) {
         console.error(`Error processing image ${imageUrl}:`, error);
-        return createPlaceholderImage();
+        return createPlaceholderImage(isSpecial);
     }
 }
 
 /**
  * Creates a combined image of multiple cards for pack opening
- * @param {Array<string>} cardUrls - Array of card image URLs
+ * @param {Array<{url: string, isSpecial: boolean}>} cardData - Array of card data objects containing URL and special status
  * @returns {Promise<Buffer>} Buffer containing the combined image
  */
-async function createPackImage(cardUrls) {
+async function createPackImage(cardData) {
     try {
         // Process all card images in parallel
         const cardImages = await Promise.all(
-            cardUrls.map(url => processCardImage(url))
+            cardData.map(data => processCardImage(data.url, data.isSpecial))
         );
 
         // Get dimensions of each processed image
