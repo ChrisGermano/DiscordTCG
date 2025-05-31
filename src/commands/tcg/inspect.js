@@ -3,13 +3,15 @@ const Card = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
 const FusedCard = require('../../models/FusedCard');
 const { MessageEmbed } = require('discord.js');
+const { processCardImage } = require('../../utils/imageUtils');
+const config = require('../../config/config');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('inspect')
     .setDescription('Inspect a card from your collection in detail')
     .addStringOption(option =>
         option.setName('card')
-            .setDescription('The name of the card to inspect')
+            .setDescription('The name of the card to inspect (include special prefix if it\'s a special card)')
             .setRequired(true));
 
 async function execute(interaction) {
@@ -30,9 +32,16 @@ async function execute(interaction) {
             return await interaction.editReply('You don\'t have any cards in your collection yet!');
         }
 
+        // Check if the card name includes the special prefix
+        const isSpecialSearch = cardName.startsWith(config.specialPrefix);
+        const searchName = isSpecialSearch ? cardName.slice(config.specialPrefix.length).trim() : cardName;
+
         // Find the card in the user's collection
         const userCard = userCollection.cards.find(card => 
-            card.cardId && card.cardId.name && card.cardId.name.toLowerCase() === cardName.toLowerCase()
+            card.cardId && 
+            card.cardId.name && 
+            card.cardId.name.toLowerCase() === searchName.toLowerCase() &&
+            card.special === isSpecialSearch
         );
 
         if (!userCard || !userCard.cardId) {
@@ -49,13 +58,20 @@ async function execute(interaction) {
                 .populate('parentCards.cardId');
         }
 
+        // Process the card image if it exists
+        let processedImageBuffer;
+        if (card.imageUrl) {
+            processedImageBuffer = await processCardImage(card.imageUrl, userCard.special);
+        }
+
         // Create embed fields array
         const fields = [
             { name: 'Type', value: isFusedCard ? 'Fused Card' : 'Regular Card', inline: true },
             { name: 'Rarity', value: capitalizeFirst(card.rarity || 'common'), inline: true },
             { name: 'Set', value: card.set || 'Unknown Set', inline: true },
             { name: 'Power', value: (card.power || 0).toString(), inline: true },
-            { name: 'Quantity', value: userCard.quantity.toString(), inline: true }
+            { name: 'Quantity', value: userCard.quantity.toString(), inline: true },
+            { name: 'Special', value: userCard.special ? 'Yes' : 'No', inline: true }
         ];
 
         // If it's a fused card, add parent card information
@@ -94,17 +110,25 @@ async function execute(interaction) {
         // Create the embed
         const embed = new MessageEmbed()
             .setColor(getRarityColor(card.rarity))
-            .setTitle(card.name)
+            .setTitle(userCard.special ? `${config.specialPrefix} ${card.name}` : card.name)
             .setDescription(card.description || 'No description available')
             .addFields(fields)
             .setFooter({ text: `Card ID: ${card._id}` })
             .setTimestamp();
 
-        if (card.imageUrl) {
-            embed.setImage(card.imageUrl);
+        // Send the response with the processed image
+        if (processedImageBuffer) {
+            await interaction.editReply({
+                embeds: [embed],
+                files: [{
+                    attachment: processedImageBuffer,
+                    name: 'card.png',
+                    description: 'Card image'
+                }]
+            });
+        } else {
+            await interaction.editReply({ embeds: [embed] });
         }
-
-        await interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
         console.error('Error in /tcg inspect command:', error);
