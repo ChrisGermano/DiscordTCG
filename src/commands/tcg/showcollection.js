@@ -66,7 +66,7 @@ async function execute(interaction) {
                     return a.special ? 1 : -1;
                 })
                 .map(card => {
-                    const special = card.special ? '🌟 ' : '';
+                    const special = card.special ? `${config.specialPrefix} ` : '';
                     const fused = card.cardType === 'FusedCard' ? '🔮 ' : '';
                     return `${special}${fused}${card.name} (${card.quantity})`;
                 })

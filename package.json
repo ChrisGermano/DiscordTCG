@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "deploy": "node src/scripts/deployCommands.js"
+    "deploy": "node src/scripts/deployCommands.js",
+    "export-cards": "node src/utils/exportCards.js"
   },
   "dependencies": {
     "@discordjs/builders": "^0.15.0",

@@ -142,8 +142,14 @@ async function execute(interaction) {
         const packImageBuffer = await createPackImage(cardUrls);
 
         // Create embed for response
-        const cardsFoundValue = addedCards.map(card => {
-            const cardString = `${getRarityEmoji(card.rarity)} **${card.name}** (${capitalizeFirst(card.rarity)})`;
+        const cardsFoundValue = addedCards.map((card, index) => {
+            // Get the corresponding user card entry to check if it's special
+            const userCard = userCollection.cards.find(c => 
+                c.cardId && c.cardId.toString() === card._id.toString() && 
+                c.cardType === 'Card'
+            );
+            const special = userCard && userCard.special ? `${config.specialPrefix} ` : '';
+            const cardString = `${getRarityEmoji(card.rarity)} **${special}${card.name}** (${capitalizeFirst(card.rarity)})`;
             console.log('Debug - Generated card string:', cardString);
             return cardString;
         }).join('\n');
@@ -200,14 +206,19 @@ async function execute(interaction) {
             timestamp: new Date().toISOString()
         };
 
-        // Send the response with both the embed and the pack image
+        // Send the pack image publicly first
         await interaction.editReply({
-            embeds: [embed],
             files: [{
                 attachment: packImageBuffer,
                 name: 'pack-opening.png',
                 description: 'Your opened pack of cards'
             }]
+        });
+
+        // Send the detailed response privately
+        await interaction.followUp({
+            embeds: [embed],
+            ephemeral: true
         });
 
     } catch (error) {
