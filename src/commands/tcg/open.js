@@ -113,21 +113,26 @@ async function execute(interaction) {
                 rarity: card.rarity
             });
 
+            // Determine if this card will be special
+            const isSpecial = config.canGenerateSpecialCards() && Math.random() < config.specialChance;
+
+            // Find existing card with the same special status
             const existingCard = userCollection.cards.find(c => 
                 c.cardId && c.cardId.toString() === card._id.toString() && 
-                c.cardType === 'Card'
+                c.cardType === 'Card' &&
+                c.special === isSpecial
             );
 
             if (existingCard) {
-                console.log('Debug - Found existing card, incrementing quantity');
+                console.log('Debug - Found existing card with same special status, incrementing quantity');
                 existingCard.quantity += 1;
             } else {
-                console.log('Debug - Adding new card to collection');
+                console.log('Debug - Adding new card to collection with special status:', isSpecial);
                 userCollection.cards.push({
                     cardId: card._id,
                     cardType: 'Card',
                     quantity: 1,
-                    special: config.canGenerateSpecialCards() && Math.random() < config.specialChance
+                    special: isSpecial
                 });
             }
             addedCards.push(card);
