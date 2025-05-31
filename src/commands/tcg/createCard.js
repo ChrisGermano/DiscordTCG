@@ -1,8 +1,9 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
+const { PermissionFlagsBits } = require('discord-api-types/v9');
 const Card = require('../../models/Card');
 const fs = require('fs').promises;
 const path = require('path');
-const fetch = require('node-fetch');
+const { generateCardImage } = require('../../utils/cardUtils');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('createcard')
@@ -35,38 +36,6 @@ const data = new SlashCommandSubcommandBuilder()
             .setRequired(true)
             .setMinValue(0)
             .setMaxValue(100));
-
-async function generateCardImage(cardName) {
-    try {
-        const response = await fetch('https://pixelateimage.org/api/coze-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: cardName,
-                aspectRatio: "1:1",
-                pixelStyle: "Retro 8-bit Pixel Art",
-                colorPalette: "Game Boy (Original)",
-                compositionStyle: "Portrait Shot"
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.imageUrl) {
-            throw new Error('No image URL in response');
-        }
-
-        return data.imageUrl;
-    } catch (error) {
-        console.error('Error generating card image:', error);
-        throw error;
-    }
-}
 
 async function execute(interaction) {
     if (!interaction.member.permissions.has('Administrator')) {

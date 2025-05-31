@@ -4,6 +4,7 @@ const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
 const config = require('../../config/config');
 const User = require('../../models/User');
+const { createPackImage } = require('../../utils/imageUtils');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('open')
@@ -48,7 +49,7 @@ function capitalizeFirst(string) {
 }
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     try {
         const userId = interaction.user.id;
@@ -94,19 +95,34 @@ async function execute(interaction) {
 
         // Generate pack contents
         const packContents = await generatePack();
+        console.log('Debug - Pack contents generated:', packContents);
         
         // Add cards to collection and award XP
         const xpResult = await user.addXp(10); // Award 10 XP for opening a pack
         const addedCards = [];
         
+        console.log('Debug - Starting card processing. User collection:', {
+            userId: userCollection.userId,
+            cardCount: userCollection.cards.length
+        });
+
         for (const card of packContents) {
+            console.log('Debug - Processing card:', {
+                cardId: card._id,
+                name: card.name,
+                rarity: card.rarity
+            });
+
             const existingCard = userCollection.cards.find(c => 
                 c.cardId && c.cardId.toString() === card._id.toString() && 
                 c.cardType === 'Card'
             );
+
             if (existingCard) {
+                console.log('Debug - Found existing card, incrementing quantity');
                 existingCard.quantity += 1;
             } else {
+                console.log('Debug - Adding new card to collection');
                 userCollection.cards.push({
                     cardId: card._id,
                     cardType: 'Card',
@@ -117,9 +133,46 @@ async function execute(interaction) {
             addedCards.push(card);
         }
         
+        console.log('Debug - Final addedCards array:', addedCards);
+        
         await userCollection.save();
 
+        // Create the combined pack image
+        const cardUrls = packContents.map(card => card.imageUrl);
+        const packImageBuffer = await createPackImage(cardUrls);
+
         // Create embed for response
+        const cardsFoundValue = addedCards.map(card => {
+            const cardString = `${getRarityEmoji(card.rarity)} **${card.name}** (${capitalizeFirst(card.rarity)})`;
+            console.log('Debug - Generated card string:', cardString);
+            return cardString;
+        }).join('\n');
+
+        const xpGainedValue = `+${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`;
+        const newBalanceValue = `${userCredits.credits} ${config.currencyName}`;
+        const footerText = `Progress to next level: ${xpResult.currentXp}/${xpResult.xpForNextLevel} XP`;
+
+        // Debug logging to identify empty values
+        console.log('Debug - Embed field values:', {
+            cardsFoundValue: cardsFoundValue || 'EMPTY',
+            xpGainedValue: xpGainedValue || 'EMPTY',
+            newBalanceValue: newBalanceValue || 'EMPTY',
+            footerText: footerText || 'EMPTY',
+            addedCards: addedCards,
+            xpResult: xpResult,
+            userCredits: userCredits
+        });
+
+        // Validate all values before creating embed
+        if (!cardsFoundValue || !xpGainedValue || !newBalanceValue || !footerText) {
+            const emptyFields = [];
+            if (!cardsFoundValue) emptyFields.push('Cards Found');
+            if (!xpGainedValue) emptyFields.push('Experience Gained');
+            if (!newBalanceValue) emptyFields.push('New Balance');
+            if (!footerText) emptyFields.push('Footer Text');
+            throw new Error(`Invalid embed field values generated. Empty fields: ${emptyFields.join(', ')}`);
+        }
+
         const embed = {
             color: 0x41E1F2,
             title: '🎴 Pack Opening Results',
@@ -127,29 +180,35 @@ async function execute(interaction) {
             fields: [
                 {
                     name: 'Cards Found',
-                    value: addedCards.map(card => 
-                        `${getRarityEmoji(card.rarity)} **${card.name}** (${capitalizeFirst(card.rarity)})`
-                    ).join('\n'),
+                    value: cardsFoundValue,
                     inline: false
                 },
                 {
                     name: 'Experience Gained',
-                    value: `+${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`,
+                    value: xpGainedValue,
                     inline: true
                 },
                 {
                     name: 'New Balance',
-                    value: `${userCredits.credits} ${config.currencyName}`,
+                    value: newBalanceValue,
                     inline: true
                 }
             ],
             footer: { 
-                text: `Progress to next level: ${xpResult.currentXp}/${xpResult.xpForNextLevel} XP` 
+                text: footerText
             },
             timestamp: new Date().toISOString()
         };
 
-        await interaction.editReply({ embeds: [embed] });
+        // Send the response with both the embed and the pack image
+        await interaction.editReply({
+            embeds: [embed],
+            files: [{
+                attachment: packImageBuffer,
+                name: 'pack-opening.png',
+                description: 'Your opened pack of cards'
+            }]
+        });
 
     } catch (error) {
         console.error('Error in /tcg open command:', error);

@@ -9,6 +9,8 @@ const FusedCard = require('../../models/FusedCard');
 const Trade = require('../../models/Trade');
 const Battle = require('../../models/Battle');
 const User = require('../../models/User');
+const { generateCardImage } = require('../../utils/cardUtils');
+const config = require('../../config/config');
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()
@@ -66,7 +68,7 @@ module.exports = {
                     // Reset all user credits to default
                     await UserCredits.updateMany({}, {
                         $set: {
-                            credits: 1000, // Default starting currency
+                            credits: config.defaultCredits, // Use default credits from config
                             lastEarnTime: null
                         }
                     });
@@ -87,7 +89,7 @@ module.exports = {
                         const isValid = card && 
                             typeof card.name === 'string' && card.name.trim() !== '' &&
                             typeof card.rarity === 'string' && ['common', 'uncommon', 'rare', 'legendary'].includes(card.rarity.toLowerCase()) &&
-                            typeof card.imageUrl === 'string' && card.imageUrl.trim() !== '' &&
+                            typeof card.imageUrl === 'string' &&
                             typeof card.description === 'string' && card.description.trim() !== '';
                         
                         if (!isValid) {
@@ -101,26 +103,49 @@ module.exports = {
                     }
 
                     // Insert all valid cards from config
-                    const cardsToInsert = validCards.map(card => ({
-                        name: card.name.trim(),
-                        rarity: card.rarity.toLowerCase(),
-                        imageUrl: card.imageUrl.trim(),
-                        description: card.description.trim(),
-                        set: card.set?.trim() || 'Base Set',
-                        power: typeof card.power === 'number' ? card.power : 0,
-                        special: Boolean(card.special)
-                    }));
+                    const cardsToInsert = [];
+                    for (const card of validCards) {
+                        let imageUrl = card.imageUrl.trim();
+                        
+                        // If image URL is blank, generate a new one
+                        if (!imageUrl) {
+                            try {
+                                imageUrl = await generateCardImage(card.name.trim());
+                                console.log(`Generated image for card: ${card.name}`);
+                            } catch (error) {
+                                console.error(`Failed to generate image for card ${card.name}:`, error);
+                                // Continue with blank image URL if generation fails
+                            }
+                        }
 
-                    await Card.insertMany(cardsToInsert);
+                        cardsToInsert.push({
+                            name: card.name.trim(),
+                            rarity: card.rarity.toLowerCase(),
+                            imageUrl: imageUrl,
+                            description: card.description.trim(),
+                            set: card.set?.trim() || 'Base Set',
+                            power: typeof card.power === 'number' ? card.power : 0,
+                            special: Boolean(card.special)
+                        });
+                    }
+
+                    // Insert cards in batches to avoid overwhelming the database
+                    const batchSize = 10;
+                    for (let i = 0; i < cardsToInsert.length; i += batchSize) {
+                        const batch = cardsToInsert.slice(i, i + batchSize);
+                        await Card.insertMany(batch);
+                        console.log(`Inserted batch of ${batch.length} cards`);
+                    }
 
                     await interaction.followUp({
                         content: '✅ System reset complete!\n' +
                             '• All user collections have been cleared\n' +
                             '• All user XP and levels have been reset\n' +
-                            '• All user currency has been reset to 1000\n' +
+                            `• All user currency has been reset to ${config.defaultCredits}\n` +
                             '• All cards have been deleted and regenerated\n' +
                             '• All fused cards have been deleted\n' +
-                            '• All trades and battles have been cleared',
+                            '• All trades and battles have been cleared\n' +
+                            '• Generated new images for cards with blank URLs',
                         ephemeral: true
                     });
                 } catch (error) {

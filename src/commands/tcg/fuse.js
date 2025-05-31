@@ -8,6 +8,7 @@ const User = require('../../models/User');
 const fetch = require('node-fetch');
 const fs = require('fs').promises;
 const path = require('path');
+const { generateCardImage } = require('../../utils/cardUtils');
 
 function findLongestCommonEnding(str1, str2) {
     const words1 = str1.split(' ');
@@ -51,38 +52,6 @@ const data = new SlashCommandSubcommandBuilder()
         option.setName('card2')
             .setDescription('Name of the second card to fuse')
             .setRequired(true));
-
-async function generateCardImage(cardName) {
-    try {
-        const response = await fetch('https://pixelateimage.org/api/coze-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: cardName,
-                aspectRatio: "1:1",
-                pixelStyle: "Retro 8-bit Pixel Art",
-                colorPalette: "Game Boy (Original)",
-                compositionStyle: "Portrait Shot"
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.imageUrl) {
-            throw new Error('No image URL in response');
-        }
-
-        return data.imageUrl;
-    } catch (error) {
-        console.error('Error generating card image:', error);
-        throw error;
-    }
-}
 
 async function checkFusion(card1, card2, userId) {
     console.log('Starting fusion check with cards:', {
@@ -237,7 +206,7 @@ async function addFusedCardToJson(fusedCard) {
 }
 
 async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
 
     try {
         const card1Name = interaction.options.getString('card1');
@@ -335,7 +304,6 @@ async function execute(interaction) {
 
             return await interaction.editReply({
                 content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${existingFusion.name}!`,
-                ephemeral: true
             });
         }
 
@@ -343,7 +311,7 @@ async function execute(interaction) {
         const fusedCard = new FusedCard({
             name: fusedName,
             description: `A powerful fusion of ${card1.name} and ${card2.name}.`,
-            rarity: card1.rarity,
+            rarity: 'fused', // Changed from card1.rarity to 'fused'
             set: card1.set,
             power: Math.max(card1.power || 0, card2.power || 0) + 10,
             imageUrl: card1.imageUrl,
@@ -383,7 +351,6 @@ async function execute(interaction) {
 
         await interaction.editReply({
             content: `✅ Successfully fused ${card1.name} and ${card2.name} into ${fusedCard.name}!`,
-            ephemeral: true
         });
 
     } catch (error) {
