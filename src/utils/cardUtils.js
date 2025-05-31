@@ -16,9 +16,10 @@ async function generateCardImage(cardName) {
             body: JSON.stringify({
                 prompt: cardName,
                 aspectRatio: "1:1",
-                pixelStyle: "Retro 8-bit Pixel Art",
-                colorPalette: "Game Boy (Original)",
-                compositionStyle: "Portrait Shot"
+                pixelStyle: "HD 16-bit Pixel Art",
+                colorPalette: "SNES",
+                lightingStyle: "Cinematic",
+                compositionStyle: "Full Body Shot"
             })
         });
 
