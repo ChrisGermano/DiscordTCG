@@ -35,13 +35,26 @@ async function execute(interaction) {
                 cardsByRarity[rarity] = [];
             }
 
-            // Add new card entry (no longer combining special and non-special)
-            cardsByRarity[rarity].push({
-                name: card.cardId.name,
-                quantity: card.quantity,
-                special: card.special,
-                cardType: card.cardType
-            });
+            // Create a unique key for each card that includes its special status
+            const cardKey = `${card.cardId.name}-${card.special ? 'special' : 'regular'}`;
+            
+            // Check if we already have this exact card (including special status)
+            const existingCardIndex = cardsByRarity[rarity].findIndex(c => 
+                c.name === card.cardId.name && c.special === card.special
+            );
+
+            if (existingCardIndex !== -1) {
+                // Update quantity of existing card
+                cardsByRarity[rarity][existingCardIndex].quantity += card.quantity;
+            } else {
+                // Add new card entry
+                cardsByRarity[rarity].push({
+                    name: card.cardId.name,
+                    quantity: card.quantity,
+                    special: card.special,
+                    cardType: card.cardType
+                });
+            }
         });
 
         // Create embed fields for each rarity
