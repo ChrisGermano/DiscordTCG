@@ -118,5 +118,7 @@ async function createPackImage(cardData) {
 }
 
 module.exports = {
-    createPackImage
+    createPackImage,
+    processCardImage,
+    createPlaceholderImage
 }; 
