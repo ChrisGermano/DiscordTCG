@@ -3,9 +3,15 @@ const Card = require('../models/Card');
 const { generateCardImage } = require('../utils/cardUtils');
 const fs = require('fs').promises;
 const path = require('path');
+require('dotenv').config();
 
 async function generateCardImages() {
     try {
+        // Verify environment variables
+        if (!process.env.MONGODB_URI) {
+            throw new Error('MONGODB_URI environment variable is not set. Please check your .env file.');
+        }
+
         // Connect to MongoDB
         console.log('Connecting to MongoDB...');
         await mongoose.connect(process.env.MONGODB_URI, {
