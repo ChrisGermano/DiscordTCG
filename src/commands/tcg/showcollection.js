@@ -10,7 +10,7 @@ const data = new SlashCommandSubcommandBuilder()
     .setDescription('Display your card collection');
 
 async function execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
     const userId = interaction.user.id;
 
@@ -22,7 +22,7 @@ async function execute(interaction) {
             });
 
         if (!userCollection || userCollection.cards.length === 0) {
-            return interaction.editReply(`${interaction.user.username} doesn't have any cards in their collection yet!`);
+            return interaction.editReply({ content: `${interaction.user.username} doesn't have any cards in their collection yet!`, ephemeral: true });
         }
 
         // Group cards by rarity
@@ -93,12 +93,15 @@ async function execute(interaction) {
             embed.addField(field.name, field.value);
         });
 
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed], ephemeral: true });
 
     } catch (error) {
         console.error('Error in showcollection command:', error);
-        await interaction.editReply('An error occurred while fetching your collection.');
+        await interaction.editReply({ content: 'An error occurred while fetching your collection.', ephemeral: true });
     }
 }
 
-module.exports = { data, execute }; 
+module.exports = {
+    data,
+    execute
+}; 

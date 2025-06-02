@@ -1,7 +1,7 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord-api-types/v9');
 const UserCredits = require('../../models/UserCredits');
-const config = require('../../config');
+const config = require('../../config/config');
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()

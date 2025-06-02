@@ -6,21 +6,6 @@ const data = new SlashCommandSubcommandBuilder()
     .setDescription('List all available TCG commands and their functions');
 
 const COMMANDS = {
-    battle: {
-        description: 'Challenge another user to a card battle',
-        usage: '/tcg battle @opponent card_name',
-        example: '/tcg battle @user Dragon'
-    },
-    accept: {
-        description: 'Accept a battle challenge and select your card',
-        usage: '/tcg accept card_name',
-        example: '/tcg accept Phoenix'
-    },
-    earn: {
-        description: `Earn 1 ${config.currencyName.slice(0, -1)} (${config.earnCooldown / (60 * 60 * 1000)} hour cooldown)`,
-        usage: '/tcg earn',
-        example: '/tcg earn'
-    },
     open: {
         description: `Open a new pack of cards (Costs ${config.packCost} ${config.currencyName})`,
         usage: '/tcg open',
@@ -31,14 +16,24 @@ const COMMANDS = {
         usage: '/tcg view [rarity] [set]',
         example: '/tcg view rare "Dragon Set"'
     },
+    showcollection: {
+        description: 'Display your complete card collection',
+        usage: '/tcg showcollection',
+        example: '/tcg showcollection'
+    },
+    inspect: {
+        description: 'View detailed information about a specific card in your collection',
+        usage: '/tcg inspect card_name',
+        example: '/tcg inspect "Dragon"'
+    },
     profile: {
-        description: 'View your collection statistics and card breakdown',
-        usage: '/tcg profile',
-        example: '/tcg profile'
+        description: 'View your or another user\'s collection statistics and card breakdown',
+        usage: '/tcg profile [@user]',
+        example: '/tcg profile @username'
     },
     trade: {
         description: 'Trade cards with other users',
-        usage: '/tcg trade offer <cards> <for> <user>',
+        usage: '/tcg trade <subcommand>',
         example: '/tcg trade offer "Card1, Card2" "Card3" @user',
         subcommands: {
             'offer': {
@@ -58,10 +53,30 @@ const COMMANDS = {
             }
         }
     },
-    inspect: {
-        description: 'View detailed information about a specific card in your collection',
-        usage: '/tcg inspect card_name',
-        example: '/tcg inspect "Dragon"'
+    tradeup: {
+        description: 'Trade up multiple cards of the same rarity for a higher rarity card',
+        usage: '/tcg tradeup',
+        example: '/tcg tradeup'
+    },
+    fuse: {
+        description: 'Fuse two cards to create a special fused card',
+        usage: '/tcg fuse <card1> <card2>',
+        example: '/tcg fuse "Dragon" "Phoenix"'
+    },
+    earn: {
+        description: `Earn 1 ${config.currencyName.slice(0, -1)} (${config.earnCooldown / (60 * 60 * 1000)} hour cooldown)`,
+        usage: '/tcg earn',
+        example: '/tcg earn'
+    },
+    givecurrency: {
+        description: '[Admin] Give currency to a user',
+        usage: '/tcg givecurrency <user> <amount>',
+        example: '/tcg givecurrency @username 100'
+    },
+    help: {
+        description: 'List all available commands and their functions',
+        usage: '/tcg help',
+        example: '/tcg help'
     }
 };
 

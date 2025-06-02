@@ -8,22 +8,39 @@ const { MessageEmbed } = require('discord.js');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('profile')
-    .setDescription('View your TCG profile');
+    .setDescription('View your TCG profile')
+    .addUserOption(option =>
+        option.setName('user')
+            .setDescription('View another user\'s profile (optional)')
+            .setRequired(false));
+
+function createProgressBar(progress) {
+    const filled = Math.round(progress / 10);
+    const empty = 10 - filled;
+    return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${Math.round(progress)}%`;
+}
 
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-        const userId = interaction.user.id;
+        // Get target user (either mentioned user or command user)
+        const targetUser = interaction.options.getUser('user') || interaction.user;
+        const userId = targetUser.id;
+
         let user = await User.findOne({ userId });
-        let collection = await UserCollection.findOne({ userId });
+        let collection = await UserCollection.findOne({ userId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
         let userCredits = await UserCredits.findOne({ userId });
 
         // Register new user if they don't exist
         if (!user) {
             user = new User({
                 userId: userId,
-                username: interaction.user.username
+                username: targetUser.username
             });
             await user.save();
         }
@@ -55,69 +72,53 @@ async function execute(interaction) {
         const totalCards = collection ? collection.cards.reduce((sum, card) => sum + card.quantity, 0) : 0;
         const uniqueCards = collection ? collection.cards.length : 0;
 
-        const rarityCounts = {
-            common: 0,
-            uncommon: 0,
-            rare: 0,
-            legendary: 0
-        };
-
-        const specialCounts = {
-            common: 0,
-            uncommon: 0,
-            rare: 0,
-            legendary: 0
-        };
-
-        for (const userCard of collection.cards) {
-            const card = await Card.findById(userCard.cardId);
-            if (card) {
-                if (userCard.special) {
-                    specialCounts[card.rarity] += userCard.quantity;
-                } else {
-                    rarityCounts[card.rarity] += userCard.quantity;
+        // Get rarity breakdown
+        const rarityCounts = {};
+        if (collection && collection.cards.length > 0) {
+            collection.cards.forEach(card => {
+                if (card.cardId && card.cardId.rarity) {
+                    const rarity = card.cardId.rarity;
+                    rarityCounts[rarity] = (rarityCounts[rarity] || 0) + card.quantity;
                 }
-            }
+            });
         }
 
-        // Create embed
+        const rarityBreakdown = Object.entries(rarityCounts)
+            .map(([rarity, count]) => {
+                const emoji = {
+                    common: '⚪',
+                    uncommon: '🟢',
+                    rare: '🔵',
+                    legendary: '🟣',
+                    fused: '✨'
+                }[rarity] || '⚪';
+                return `${emoji} ${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${count}`;
+            })
+            .join('\n');
+
         const embed = new MessageEmbed()
-            .setTitle(`${interaction.user.username}'s TCG Profile`)
             .setColor('#FFD700')
-            .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+            .setTitle(`${targetUser.username}'s TCG Profile`)
+            .setDescription(`Level ${user.level} Collector`)
+            .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, format: 'png', size: 256 }))
             .addFields(
-                { name: 'Level', value: `${user.level}`, inline: true },
-                { name: 'XP Progress', value: `${progressBar}\n${user.xp}/${xpForNextLevel} XP`, inline: false },
+                { name: 'Experience', value: `${progressBar}\n${user.xp}/${xpForNextLevel} XP`, inline: false },
+                { name: 'Currency', value: `${userCredits.credits} ${config.currencyName}`, inline: true },
                 { name: 'Total Cards', value: `${totalCards}`, inline: true },
                 { name: 'Unique Cards', value: `${uniqueCards}`, inline: true },
-                { name: 'Special Cards', value: `${specialCounts.common + specialCounts.uncommon + specialCounts.rare + specialCounts.legendary}`, inline: true },
-                { name: 'Card Types', value: `Regular: ${rarityCounts.common + rarityCounts.uncommon + rarityCounts.rare + rarityCounts.legendary}\nFused: ${specialCounts.common + specialCounts.uncommon + specialCounts.rare + specialCounts.legendary}`, inline: true }
-            );
+                { name: 'Cards by Rarity', value: rarityBreakdown || 'No cards yet', inline: false }
+            )
+            .setTimestamp();
 
-        // Add rarity breakdown
-        const rarityBreakdown = Object.entries(rarityCounts)
-            .map(([rarity, count]) => `${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${count}`)
-            .join('\n');
-        embed.addField('Cards by Rarity', rarityBreakdown || 'No cards yet');
-
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed], ephemeral: true });
 
     } catch (error) {
         console.error('Error in /tcg profile command:', error);
-        await interaction.editReply('There was an error fetching your profile. Please try again later.');
+        await interaction.editReply({ 
+            content: 'There was an error fetching the profile. Please try again later.',
+            ephemeral: true 
+        });
     }
-}
-
-function createProgressBar(progress) {
-    const totalBlocks = 10;
-    const filledBlocks = Math.floor((progress / 100) * totalBlocks);
-    const emptyBlocks = totalBlocks - filledBlocks;
-    
-    // Use different block characters for better visual appearance
-    const filledChar = '█';
-    const emptyChar = '░';
-    
-    return `[${filledChar.repeat(filledBlocks)}${emptyChar.repeat(emptyBlocks)}] ${Math.round(progress)}%`;
 }
 
 module.exports = {

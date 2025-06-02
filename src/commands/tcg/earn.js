@@ -4,7 +4,7 @@ const config = require('../../config/config');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('earn')
-    .setDescription(`Earn 1 ${config.currencyName.slice(0, -1)} (12 hour cooldown)`);
+    .setDescription(`Earn 1 ${config.currencyName.slice(0, -1)} (${config.earnCooldown / (60 * 60 * 1000)} hour cooldown)`);
 
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
@@ -22,7 +22,18 @@ async function execute(interaction) {
         if (userCredits.lastEarnTime && (now - userCredits.lastEarnTime) < cooldownTime) {
             const timeLeft = cooldownTime - (now - userCredits.lastEarnTime);
             const hoursLeft = Math.ceil(timeLeft / (60 * 60 * 1000));
-            await interaction.editReply(`You need to wait ${hoursLeft} more hour(s) before earning again.`);
+            const minutesLeft = Math.ceil((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+            
+            let timeMessage = '';
+            if (hoursLeft > 0) {
+                timeMessage += `${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}`;
+            }
+            if (minutesLeft > 0) {
+                if (hoursLeft > 0) timeMessage += ' and ';
+                timeMessage += `${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}`;
+            }
+            
+            await interaction.editReply(`You need to wait ${timeMessage} before earning again.`);
             return;
         }
 

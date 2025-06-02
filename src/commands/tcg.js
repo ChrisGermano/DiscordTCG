@@ -4,9 +4,6 @@ const showcollectionCommand = require('./tcg/showcollection');
 const earnCommand = require('./tcg/earn');
 const tradeupCommand = require('./tcg/tradeup');
 const givecurrencyCommand = require('./tcg/givecurrency');
-const createCardCommand = require('./tcg/createCard');
-const battleCommand = require('./tcg/battle');
-const acceptCommand = require('./tcg/accept');
 const helpCommand = require('./tcg/help');
 const viewCommand = require('./tcg/view');
 const profileCommand = require('./tcg/profile');
@@ -22,9 +19,6 @@ const data = new SlashCommandBuilder()
     .addSubcommand(earnCommand.data)
     .addSubcommand(tradeupCommand.data)
     .addSubcommand(givecurrencyCommand.data)
-    .addSubcommand(createCardCommand.data)
-    .addSubcommand(battleCommand.data)
-    .addSubcommand(acceptCommand.data)
     .addSubcommand(helpCommand.data)
     .addSubcommand(viewCommand.data)
     .addSubcommand(profileCommand.data)
@@ -90,9 +84,6 @@ async function execute(interaction) {
             'earn': earnCommand,
             'tradeup': tradeupCommand,
             'givecurrency': givecurrencyCommand,
-            'createcard': createCardCommand,
-            'battle': battleCommand,
-            'accept': acceptCommand,
             'help': helpCommand,
             'view': viewCommand,
             'profile': profileCommand,
