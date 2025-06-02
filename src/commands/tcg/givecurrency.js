@@ -1,6 +1,7 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord-api-types/v9');
 const UserCredits = require('../../models/UserCredits');
+const config = require('../../config');
 
 module.exports = {
     data: new SlashCommandSubcommandBuilder()
@@ -69,10 +70,28 @@ module.exports = {
             await userCredits.save();
             console.log('Updated user credits:', userCredits);
 
+            // Send confirmation to the admin
             await interaction.reply({
-                content: `✅ Successfully gave ${amount} currency to ${targetUser.username}. Their new balance is ${userCredits.credits} currency.`,
+                content: `✅ Successfully gave ${amount} ${config.currencyName} to ${targetUser}. Their new balance is ${userCredits.credits} ${config.currencyName}.`,
                 ephemeral: true
             });
+
+            // Send notification to the recipient
+            try {
+                await targetUser.send({
+                    content: `💰 You received ${amount} ${config.currencyName} from ${interaction.user}! Your new balance is ${userCredits.credits} ${config.currencyName}.`
+                });
+            } catch (dmError) {
+                console.error(`Could not send DM to ${targetUser.username}:`, dmError);
+                // If we can't DM them, try to mention them in the channel
+                if (!interaction.ephemeral) {
+                    await interaction.followUp({
+                        content: `${targetUser} You received ${amount} ${config.currencyName}! Your new balance is ${userCredits.credits} ${config.currencyName}.`,
+                        ephemeral: false
+                    });
+                }
+            }
+
         } catch (error) {
             console.error('Error in givecurrency command:', error);
             await interaction.reply({

@@ -214,15 +214,20 @@ async function execute(interaction) {
             };
         }
 
-        // Send a single response with both the image and embed
+        // Send the image response publicly first
         if (!interaction.replied) {
             await interaction.editReply({
                 files: [{
                     attachment: packImageBuffer,
                     name: 'pack-opening.png',
                     description: 'Your opened pack of cards'
-                }],
-                embeds: [embed]
+                }]
+            });
+
+            // Then send the embed as an ephemeral follow-up
+            await interaction.followUp({
+                embeds: [embed],
+                ephemeral: true
             });
         }
 
