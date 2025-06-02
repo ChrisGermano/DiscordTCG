@@ -4,7 +4,6 @@ const showcollectionCommand = require('./tcg/showcollection');
 const earnCommand = require('./tcg/earn');
 const tradeupCommand = require('./tcg/tradeup');
 const givecurrencyCommand = require('./tcg/givecurrency');
-const resetCommand = require('./tcg/reset');
 const createCardCommand = require('./tcg/createCard');
 const battleCommand = require('./tcg/battle');
 const acceptCommand = require('./tcg/accept');
@@ -23,7 +22,6 @@ const data = new SlashCommandBuilder()
     .addSubcommand(earnCommand.data)
     .addSubcommand(tradeupCommand.data)
     .addSubcommand(givecurrencyCommand.data)
-    .addSubcommand(resetCommand.data)
     .addSubcommand(createCardCommand.data)
     .addSubcommand(battleCommand.data)
     .addSubcommand(acceptCommand.data)
@@ -32,41 +30,42 @@ const data = new SlashCommandBuilder()
     .addSubcommand(profileCommand.data)
     .addSubcommand(fuseCommand.data)
     .addSubcommand(inspectCommand.data)
-    .addSubcommandGroup(group => group
-        .setName('trade')
-        .setDescription('Trade cards with other users')
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('offer')
-                .setDescription('Offer a trade to another user')
-                .addStringOption(option =>
-                    option.setName('cards')
-                        .setDescription('Cards you want to trade (comma-separated)')
-                        .setRequired(true))
-                .addStringOption(option =>
-                    option.setName('for')
-                        .setDescription('Cards you want in return (comma-separated)')
-                        .setRequired(true))
-                .addUserOption(option =>
-                    option.setName('user')
-                        .setDescription('User to trade with')
-                        .setRequired(true)))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('accept')
-                .setDescription('Accept a trade offer')
-                .addStringOption(option =>
-                    option.setName('trade_id')
-                        .setDescription('ID of the trade to accept')
-                        .setRequired(true)))
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName('cancel')
-                .setDescription('Cancel a trade offer')
-                .addStringOption(option =>
-                    option.setName('trade_id')
-                        .setDescription('ID of the trade to cancel')
-                        .setRequired(true))));
+    .addSubcommandGroup(subcommandGroup =>
+        subcommandGroup
+            .setName('trade')
+            .setDescription('Trade cards with other users')
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('offer')
+                    .setDescription('Offer a trade to another user')
+                    .addStringOption(option =>
+                        option.setName('cards')
+                            .setDescription('Cards you want to trade (comma-separated)')
+                            .setRequired(true))
+                    .addStringOption(option =>
+                        option.setName('for')
+                            .setDescription('Cards you want in return (comma-separated)')
+                            .setRequired(true))
+                    .addUserOption(option =>
+                        option.setName('user')
+                            .setDescription('User to trade with')
+                            .setRequired(true)))
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('accept')
+                    .setDescription('Accept a trade offer')
+                    .addStringOption(option =>
+                        option.setName('trade_id')
+                            .setDescription('ID of the trade to accept')
+                            .setRequired(true)))
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('cancel')
+                    .setDescription('Cancel a trade offer')
+                    .addStringOption(option =>
+                        option.setName('trade_id')
+                            .setDescription('ID of the trade to cancel')
+                            .setRequired(true))));
 
 async function execute(interaction) {
     try {
@@ -91,7 +90,6 @@ async function execute(interaction) {
             'earn': earnCommand,
             'tradeup': tradeupCommand,
             'givecurrency': givecurrencyCommand,
-            'reset': resetCommand,
             'createcard': createCardCommand,
             'battle': battleCommand,
             'accept': acceptCommand,
