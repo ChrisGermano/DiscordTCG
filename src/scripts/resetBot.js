@@ -77,7 +77,7 @@ async function resetBot() {
         await fs.writeFile(cardsPath, JSON.stringify(defaultCardsData, null, 2));
 
         // Recreate base cards if cards.json exists in config
-        const baseCardsPath = path.join(__dirname, '../config/baseCards.json');
+        const baseCardsPath = path.join(__dirname, '../config/cards.json');
         try {
             const baseCardsData = JSON.parse(await fs.readFile(baseCardsPath, 'utf8'));
             console.log('Found base cards, recreating...');
