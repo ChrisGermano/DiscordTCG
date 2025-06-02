@@ -214,21 +214,16 @@ async function execute(interaction) {
             };
         }
 
-        // Send responses in parallel, but only if we haven't replied yet
+        // Send a single response with both the image and embed
         if (!interaction.replied) {
-            await Promise.all([
-                interaction.editReply({
-                    files: [{
-                        attachment: packImageBuffer,
-                        name: 'pack-opening.png',
-                        description: 'Your opened pack of cards'
-                    }]
-                }),
-                interaction.followUp({
-                    embeds: [embed],
-                    ephemeral: true
-                })
-            ]);
+            await interaction.editReply({
+                files: [{
+                    attachment: packImageBuffer,
+                    name: 'pack-opening.png',
+                    description: 'Your opened pack of cards'
+                }],
+                embeds: [embed]
+            });
         }
 
     } catch (error) {
