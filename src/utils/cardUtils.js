@@ -14,12 +14,12 @@ async function generateCardImage(cardName) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                prompt: cardName,
+                prompt: cardName + " with no text in image",
                 aspectRatio: "1:1",
-                pixelStyle: "HD 16-bit Pixel Art",
-                colorPalette: "SNES",
-                lightingStyle: "Cinematic",
-                compositionStyle: "Full Body Shot"
+                pixelStyle: "Fantasy Pixel Art",
+                colorPalette: "Vibrant",
+                lightingStyle: "Dynamic Shadows",
+                compositionStyle: "Bird's Eye View"
             })
         });
 
