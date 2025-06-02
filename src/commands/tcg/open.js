@@ -149,11 +149,18 @@ async function execute(interaction) {
                 c.cardType === 'Card'
             );
             return {
-                url: card.imageUrl,
+                url: card.imageUrl || '', // Ensure we have a string, even if empty
                 isSpecial: userCard && userCard.special
             };
         });
-        const packImageBuffer = await createPackImage(cardData);
+
+        // Filter out any cards with empty URLs before creating the pack image
+        const validCardData = cardData.filter(data => data.url && data.url.trim() !== '');
+        
+        // If we have no valid cards, create a placeholder pack image
+        const packImageBuffer = validCardData.length > 0 
+            ? await createPackImage(validCardData)
+            : await createPackImage([{ url: '', isSpecial: false }]); // Create a single placeholder card
 
         // Create embed for response
         const cardsFoundValue = addedCards.map((card, index) => {
