@@ -105,16 +105,17 @@ async function execute(interaction) {
             throw new Error(`Unknown subcommand: ${subcommand}`);
         }
 
-        await command.execute(interaction);
+        // Pass the interaction directly to the subcommand without any additional handling
+        return await command.execute(interaction);
 
     } catch (error) {
         console.error('Error in TCG command:', error);
-        const errorMessage = 'There was an error executing the command. Please try again later.';
-        
+        // Only try to reply if the interaction hasn't been handled yet
         if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: errorMessage, ephemeral: true });
-        } else {
-            await interaction.editReply({ content: errorMessage, ephemeral: true });
+            await interaction.reply({ 
+                content: 'There was an error executing the command. Please try again later.',
+                ephemeral: true 
+            });
         }
     }
 }
