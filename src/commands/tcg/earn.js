@@ -81,7 +81,7 @@ async function execute(interaction) {
         userCredits.lastEarnTime = now;
         await userCredits.save();
 
-        let message = `You earned ${creditsToGive} ${config.currencyName.slice(0, -1)}!`;
+        let message = `You earned ${creditsToGive} ${creditsToGive === 1 ? config.currencyName.slice(0, -1) : config.currencyName}!`;
         if (hasGorvyn) {
             message += ` (Doubled by Gorvyn the Gilded Boar)`;
         }
