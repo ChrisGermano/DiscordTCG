@@ -1,5 +1,5 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
-const Card = require('../../models/Card');
+const { Card, CARD_TYPES } = require('../../models/Card');
 const UserCollection = require('../../models/UserCollection');
 const UserCredits = require('../../models/UserCredits');
 const config = require('../../config/config');

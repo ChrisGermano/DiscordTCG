@@ -8,7 +8,8 @@
     "deploy": "node src/scripts/deployCommands.js",
     "export-cards": "node src/utils/exportCards.js",
     "reset": "node src/scripts/resetBot.js",
-    "generate-images": "node src/scripts/generateCardImages.js"
+    "generate-images": "node src/scripts/generateCardImages.js",
+    "update-types": "node src/scripts/updateCardTypes.js"
   },
   "dependencies": {
     "@discordjs/builders": "^0.15.0",

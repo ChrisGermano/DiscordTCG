@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 const UserCollection = require('../models/UserCollection');
-const Card = require('../models/Card');
+const { Card, CARD_TYPES } = require('../models/Card');
 
 const COMPOSITION_STYLES = [
     "Bird's Eye View",

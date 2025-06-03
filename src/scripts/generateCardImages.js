@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Card = require('../models/Card');
+const { Card } = require('../models/Card');
 const { generateCardImage } = require('../utils/cardUtils');
 const fs = require('fs').promises;
 const path = require('path');
@@ -23,6 +23,7 @@ async function syncCardsToDatabase(cardsData) {
                 existingCard.description = cardData.description;
                 existingCard.set = cardData.set;
                 existingCard.power = cardData.power;
+                existingCard.type = cardData.type;
                 await existingCard.save();
                 updated++;
                 console.log(`Updated card: ${cardData.name}`);
@@ -34,7 +35,8 @@ async function syncCardsToDatabase(cardsData) {
                     rarity: cardData.rarity,
                     description: cardData.description,
                     set: cardData.set,
-                    power: cardData.power
+                    power: cardData.power,
+                    type: cardData.type
                 });
                 await newCard.save();
                 inserted++;

@@ -73,6 +73,11 @@ const COMMANDS = {
         usage: '/tcg givecurrency <user> <amount>',
         example: '/tcg givecurrency @username 100'
     },
+    givecard: {
+        description: '[Admin] Give a card to a user',
+        usage: '/tcg givecard <card_name> <user>',
+        example: '/tcg givecard "Dragon" @username'
+    },
     help: {
         description: 'List all available commands and their functions',
         usage: '/tcg help',

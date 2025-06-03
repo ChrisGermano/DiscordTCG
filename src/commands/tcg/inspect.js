@@ -66,7 +66,7 @@ async function execute(interaction) {
 
         // Create embed fields array
         const fields = [
-            { name: 'Type', value: isFusedCard ? 'Fused Card' : 'Regular Card', inline: true },
+            { name: 'Type', value: isFusedCard ? 'Fused Card' : capitalizeFirst(card.type || 'Unknown'), inline: true },
             { name: 'Rarity', value: capitalizeFirst(card.rarity || 'common'), inline: true },
             { name: 'Set', value: card.set || 'Unknown Set', inline: true },
             { name: 'Power', value: (card.power || 0).toString(), inline: true },
