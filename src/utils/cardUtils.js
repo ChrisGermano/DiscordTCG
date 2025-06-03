@@ -1,4 +1,6 @@
 const fetch = require('node-fetch');
+const UserCollection = require('../models/UserCollection');
+const Card = require('../models/Card');
 
 const COMPOSITION_STYLES = [
     "Bird's Eye View",
@@ -54,6 +56,54 @@ async function generateCardImage(cardName) {
     }
 }
 
+/**
+ * Add experience to a user, applying Xenithar's 1.5x multiplier if they have the card
+ * @param {Object} user - The user document to add XP to
+ * @param {number} amount - The base amount of XP to add
+ * @returns {Promise<Object>} The XP gain result including any bonuses
+ */
+async function addExperience(user, amount) {
+    // Check if user has Xenithar
+    const userCollection = await UserCollection.findOne({ userId: user.userId })
+        .populate({
+            path: 'cards.cardId',
+            refPath: 'cards.cardType'
+        });
+
+    let hasXenithar = false;
+    if (userCollection) {
+        const xenitharCard = await Card.findOne({ name: 'Xenithar the Core Cognizant' });
+        if (xenitharCard) {
+            hasXenithar = userCollection.cards.some(card => 
+                card.cardId && 
+                card.cardId._id.toString() === xenitharCard._id.toString() && 
+                card.quantity > 0
+            );
+        }
+    }
+
+    // Apply Xenithar's 1.5x multiplier if they have it
+    const xpToAdd = hasXenithar ? Math.floor(amount * 1.5) : amount;
+    user.xp += xpToAdd;
+    user.lastXpGain = new Date();
+    
+    // Check for level ups
+    while (user.xp >= user.getXpForNextLevel()) {
+        user.xp -= user.getXpForNextLevel();
+        user.level += 1;
+    }
+    
+    await user.save();
+    return {
+        newLevel: user.level,
+        xpGained: xpToAdd,
+        currentXp: user.xp,
+        xpForNextLevel: user.getXpForNextLevel(),
+        xenitharBonus: hasXenithar
+    };
+}
+
 module.exports = {
-    generateCardImage
+    generateCardImage,
+    addExperience
 }; 

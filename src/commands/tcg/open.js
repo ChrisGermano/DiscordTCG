@@ -18,12 +18,16 @@ async function generatePack() {
     ]);
 
     // Generate the last two cards with rarity based on chances
-    const lastTwoCards = await Promise.all([0, 1].map(async () => {
+    const lastTwoCards = await Promise.all([0, 1].map(async (index) => {
         const roll = Math.random();
         let rarity;
 
-        // Try legendary first
-        if (roll < config.legendaryChance) {
+        // For the last card (index 1), check for deity first
+        if (index === 1 && roll < config.deityChance) {
+            rarity = 'deity';
+        }
+        // Try legendary
+        else if (roll < config.legendaryChance) {
             rarity = 'legendary';
         }
         // Then try rare
@@ -56,6 +60,7 @@ function getRarityEmoji(rarity) {
         uncommon: '🟢',
         rare: '🔵',
         legendary: '🟣',
+        deity: '🌟',
         fused: '✨'
     };
     return emojis[rarity] || '⚪';
@@ -209,7 +214,13 @@ async function execute(interaction) {
 
         // Only add these fields if they have values
         if (xpResult && xpResult.xpGained) {
-            const xpGainedValue = `+${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`;
+            let xpGainedValue = `+${xpResult.xpGained} XP`;
+            if (xpResult.xenitharBonus) {
+                xpGainedValue += ' (1.5x from Xenithar the Core Cognizant)';
+            }
+            if (xpResult.newLevel > user.level) {
+                xpGainedValue += `\n🎉 Level Up! You are now level ${xpResult.newLevel}!`;
+            }
             embed.fields.push({
                 name: 'Experience Gained',
                 value: xpGainedValue,

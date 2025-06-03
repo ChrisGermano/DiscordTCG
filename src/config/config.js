@@ -9,6 +9,7 @@ module.exports = {
     legendaryChance: parseFloat(process.env.LEGENDARY_CHANCE || '0.01'),
     rareChance: parseFloat(process.env.RARE_CHANCE || '0.1'),
     uncommonChance: parseFloat(process.env.UNCOMMON_CHANCE || '0.3'),
+    deityChance: parseFloat(process.env.DEITY_CHANCE || '0.001'), // 1/1000 chance
     specialPrefix: process.env.SPECIAL_PREFIX || null,
     canGenerateSpecialCards: () => Boolean(process.env.SPECIAL_PREFIX),
     currencyName: process.env.CURRENCY_NAME

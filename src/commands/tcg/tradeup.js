@@ -111,7 +111,9 @@ async function execute(interaction) {
             common: '⚪',
             uncommon: '🟢',
             rare: '🔵',
-            legendary: '🟣'
+            legendary: '🟣',
+            deity: '🌟',
+            fused: '✨'
         }[nextRarity];
 
         // Find the newly added card to check if it's special
@@ -127,7 +129,13 @@ async function execute(interaction) {
         response += `${rarityEmoji} ${newCardName}\n`;
         response += `*${newCard.description}*\n`;
         response += `Set: **${newCard.set}**\n`;
-        response += `Experience Gained: +${xpResult.xpGained} XP${xpResult.newLevel > user.level ? `\n🎉 Level Up! You are now level ${xpResult.newLevel}!` : ''}`;
+        response += `Experience Gained: +${xpResult.xpGained} XP`;
+        if (xpResult.xenitharBonus) {
+            response += ' (1.5x from Xenithar the Core Cognizant)';
+        }
+        if (xpResult.newLevel > user.level) {
+            response += `\n🎉 Level Up! You are now level ${xpResult.newLevel}!`;
+        }
         response += `\nProgress to next level: ${xpResult.currentXp}/${xpResult.xpForNextLevel} XP`;
 
         await interaction.editReply(response);
