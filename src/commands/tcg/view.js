@@ -41,8 +41,8 @@ function getRarityEmoji(rarity) {
         common: '⚪',
         uncommon: '🟢',
         rare: '🔵',
-        legendary: '🟣',
-        deity: '🌟',
+        legendary: '��',
+        deity: '🟡',
         fused: '✨'
     };
     return emojis[rarity] || '⚪';

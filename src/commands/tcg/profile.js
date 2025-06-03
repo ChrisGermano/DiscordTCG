@@ -90,6 +90,7 @@ async function execute(interaction) {
                     uncommon: '🟢',
                     rare: '🔵',
                     legendary: '🟣',
+                    deity: '🟡',
                     fused: '✨'
                 }[rarity] || '⚪';
                 return `${emoji} ${rarity.charAt(0).toUpperCase() + rarity.slice(1)}: ${count}`;

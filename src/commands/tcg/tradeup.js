@@ -112,7 +112,7 @@ async function execute(interaction) {
             uncommon: '🟢',
             rare: '🔵',
             legendary: '🟣',
-            deity: '🌟',
+            deity: '🟡',
             fused: '✨'
         }[nextRarity];
 
