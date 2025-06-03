@@ -11,26 +11,43 @@ const data = new SlashCommandSubcommandBuilder()
     .setDescription(`Open a new pack of cards (Costs ${config.packCost} ${config.currencyName})`);
 
 async function generatePack() {
-    // Get 3 common cards
+    // Get 3 common cards (always common)
     const commonCards = await Card.aggregate([
         { $match: { rarity: 'common' } },
         { $sample: { size: 3 } }
     ]);
 
-    // Get 1 uncommon card
-    const uncommonCard = await Card.aggregate([
-        { $match: { rarity: 'uncommon' } },
-        { $sample: { size: 1 } }
-    ]);
+    // Generate the last two cards with rarity based on chances
+    const lastTwoCards = await Promise.all([0, 1].map(async () => {
+        const roll = Math.random();
+        let rarity;
 
-    // Get 1 rare or legendary card (with legendary chance)
-    const isLegendary = Math.random() < config.legendaryChance;
-    const rareOrLegendary = await Card.aggregate([
-        { $match: { rarity: isLegendary ? 'legendary' : 'rare' } },
-        { $sample: { size: 1 } }
-    ]);
+        // Try legendary first
+        if (roll < config.legendaryChance) {
+            rarity = 'legendary';
+        }
+        // Then try rare
+        else if (roll < config.legendaryChance + config.rareChance) {
+            rarity = 'rare';
+        }
+        // Then try uncommon
+        else if (roll < config.legendaryChance + config.rareChance + config.uncommonChance) {
+            rarity = 'uncommon';
+        }
+        // Otherwise it's common
+        else {
+            rarity = 'common';
+        }
 
-    return [...commonCards, ...uncommonCard, ...rareOrLegendary];
+        const card = await Card.aggregate([
+            { $match: { rarity } },
+            { $sample: { size: 1 } }
+        ]);
+
+        return card[0];
+    }));
+
+    return [...commonCards, ...lastTwoCards];
 }
 
 function getRarityEmoji(rarity) {

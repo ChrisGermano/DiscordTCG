@@ -1,5 +1,17 @@
 const fetch = require('node-fetch');
 
+const COMPOSITION_STYLES = [
+    "Bird's Eye View",
+    "Portrait Shot",
+    "Full Body Shot"
+];
+
+const LIGHTING_STYLES = [
+    "Dynamic Shadows",
+    "Cinematic",
+    "Ambient Occlusion"
+];
+
 /**
  * Generates a card image using the pixelateimage.org API
  * @param {string} cardName - The name of the card to generate an image for
@@ -8,6 +20,9 @@ const fetch = require('node-fetch');
  */
 async function generateCardImage(cardName) {
     try {
+        const randomComposition = COMPOSITION_STYLES[Math.floor(Math.random() * COMPOSITION_STYLES.length)];
+        const randomLighting = LIGHTING_STYLES[Math.floor(Math.random() * LIGHTING_STYLES.length)];
+
         const response = await fetch('https://pixelateimage.org/api/coze-image', {
             method: 'POST',
             headers: {
@@ -18,8 +33,8 @@ async function generateCardImage(cardName) {
                 aspectRatio: "1:1",
                 pixelStyle: "Fantasy Pixel Art",
                 colorPalette: "Vibrant",
-                lightingStyle: "Dynamic Shadows",
-                compositionStyle: "Bird's Eye View"
+                lightingStyle: randomLighting,
+                compositionStyle: randomComposition
             })
         });
 
