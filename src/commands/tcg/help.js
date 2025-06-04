@@ -82,6 +82,11 @@ const COMMANDS = {
         description: 'List all available commands and their functions',
         usage: '/tcg help',
         example: '/tcg help'
+    },
+    battle: {
+        description: 'Start a battle against a bot enemy using one of your cards',
+        usage: '/tcg battle <card_name> <difficulty>',
+        example: '/tcg battle "Dragon" medium'
     }
 };
 

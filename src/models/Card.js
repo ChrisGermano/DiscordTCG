@@ -75,7 +75,8 @@ const cardSchema = new mongoose.Schema({
     },
     set: { type: String, required: true },
     imageUrl: { type: String },
-    special: { type: Boolean, default: false }
+    special: { type: Boolean, default: false },
+    power: { type: Number, default: 0 }
 });
 
 // Static method to check type effectiveness

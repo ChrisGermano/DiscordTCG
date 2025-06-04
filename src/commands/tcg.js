@@ -11,6 +11,7 @@ const profileCommand = require('./tcg/profile');
 const fuseCommand = require('./tcg/fuse');
 const tradeCommand = require('./tcg/trade');
 const inspectCommand = require('./tcg/inspect');
+const battleCommand = require('./tcg/battle');
 
 const data = new SlashCommandBuilder()
     .setName('tcg')
@@ -26,6 +27,7 @@ const data = new SlashCommandBuilder()
     .addSubcommand(profileCommand.data)
     .addSubcommand(fuseCommand.data)
     .addSubcommand(inspectCommand.data)
+    .addSubcommand(battleCommand.data)
     .addSubcommandGroup(subcommandGroup =>
         subcommandGroup
             .setName('trade')
@@ -91,7 +93,8 @@ async function execute(interaction) {
             'view': viewCommand,
             'profile': profileCommand,
             'fuse': fuseCommand,
-            'inspect': inspectCommand
+            'inspect': inspectCommand,
+            'battle': battleCommand
         };
 
         const command = commandMap[subcommand];
