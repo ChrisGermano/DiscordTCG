@@ -100,7 +100,13 @@ const BATTLE_CONSTANTS = {
         fused: 1.8        // 80% more health
     },
     BATTLE_CONDITION_HEALTH_MULTIPLIER: 1.3,  // 30% more health when affected by battle condition
-    DAMAGE_VARIANCE: 0.1  // ±10% random variance in damage
+    DAMAGE_VARIANCE: 0.1,  // ±10% random variance in damage
+    // Credit reward multipliers based on difficulty
+    CREDIT_MULTIPLIERS: {
+        easy: 0.4,    // 40% of enemy power
+        medium: 0.8,  // 80% of enemy power
+        hard: 1.5     // 150% of enemy power
+    }
 };
 
 function getTypeAdvantage(attackerType, defenderType) {
@@ -183,7 +189,7 @@ function calculateDamage(attacker, defender, attackerType, defenderType, battleC
     };
 }
 
-async function simulateBattle(playerCard, enemyCard, battleCondition, userCollection) {
+async function simulateBattle(playerCard, enemyCard, battleCondition, userCollection, difficulty) {
     // Calculate starting health with multipliers
     let playerHealth = calculateStartingHealth(playerCard, battleCondition);
     let enemyHealth = calculateStartingHealth(enemyCard, battleCondition);
@@ -291,11 +297,13 @@ async function simulateBattle(playerCard, enemyCard, battleCondition, userCollec
         }
     } else if (enemyHealth <= 0) {
         outcome = "You won the battle!";
-        // Award credits equal to enemy's power
-        const creditsEarned = enemyCard.power;
+        // Award credits based on enemy's power and difficulty
+        const baseCredits = enemyCard.power;
+        const multiplier = BATTLE_CONSTANTS.CREDIT_MULTIPLIERS[difficulty];
+        const creditsEarned = Math.floor(baseCredits * multiplier);
         userCollection.credits += creditsEarned;
         await userCollection.save();
-        rewards = `You earned ${creditsEarned} credit${creditsEarned === 1 ? '' : 's'}!`;
+        rewards = `You earned ${creditsEarned} credit${creditsEarned === 1 ? '' : 's'}! (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} difficulty: ${multiplier}x multiplier)`;
     } else {
         outcome = "The battle reached the maximum number of turns!";
     }
@@ -376,7 +384,10 @@ async function execute(interaction) {
         // Create initial battle message
         let message = `**Battle Initiated!**\n\n`;
         message += `**Battle Rules:**\n`;
-        message += `• If you win, you'll earn credits equal to the enemy's power\n`;
+        message += `• If you win, you'll earn credits based on the enemy's power:\n`;
+        message += `  - Easy: ${BATTLE_CONSTANTS.CREDIT_MULTIPLIERS.easy}x enemy power\n`;
+        message += `  - Medium: ${BATTLE_CONSTANTS.CREDIT_MULTIPLIERS.medium}x enemy power\n`;
+        message += `  - Hard: ${BATTLE_CONSTANTS.CREDIT_MULTIPLIERS.hard}x enemy power\n`;
         message += `• If you lose, you'll lose one copy of your chosen card\n\n`;
         
         // Battle condition
@@ -423,8 +434,8 @@ async function execute(interaction) {
         // Send initial battle setup
         await interaction.editReply(message);
 
-        // Simulate the battle with userCollection for rewards/penalties
-        const battleResult = await simulateBattle(playerCard.cardId, enemyCard, randomCondition, userCollection);
+        // Simulate the battle with userCollection and difficulty for rewards/penalties
+        const battleResult = await simulateBattle(playerCard.cardId, enemyCard, randomCondition, userCollection, difficulty);
         
         // Send battle log in chunks to avoid message length limits
         for (let i = 0; i < battleResult.battleLog.length; i++) {
