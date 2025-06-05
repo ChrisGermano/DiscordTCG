@@ -12,7 +12,52 @@ const data = new SlashCommandSubcommandBuilder()
     .addStringOption(option =>
         option.setName('card')
             .setDescription('The name of the card to inspect (include special prefix if it\'s a special card)')
-            .setRequired(true));
+            .setRequired(true)
+            .setAutocomplete(true));
+
+async function autocomplete(interaction) {
+    try {
+        const focusedValue = interaction.options.getFocused().toLowerCase();
+        const userId = interaction.user.id;
+
+        // Get user's collection
+        const userCollection = await UserCollection.findOne({ userId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
+
+        if (!userCollection) {
+            return await interaction.respond([]);
+        }
+
+        // Filter cards based on the focused value
+        const matchingCards = userCollection.cards
+            .filter(card => 
+                card.cardId && 
+                card.cardId.name && 
+                (card.cardId.name.toLowerCase().includes(focusedValue) ||
+                (card.special && `${config.specialPrefix} ${card.cardId.name}`.toLowerCase().includes(focusedValue)))
+            )
+            .map(card => ({
+                name: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name,
+                value: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name
+            }))
+            // Remove duplicates (in case user has multiple copies)
+            .filter((card, index, self) => 
+                index === self.findIndex(c => c.value === card.value)
+            )
+            // Sort alphabetically
+            .sort((a, b) => a.name.localeCompare(b.name))
+            // Limit to 25 choices (Discord's limit)
+            .slice(0, 25);
+
+        await interaction.respond(matchingCards);
+    } catch (error) {
+        console.error('Error in inspect command autocomplete:', error);
+        await interaction.respond([]);
+    }
+}
 
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
@@ -153,5 +198,6 @@ function capitalizeFirst(string) {
 
 module.exports = {
     data,
-    execute
+    execute,
+    autocomplete
 }; 
