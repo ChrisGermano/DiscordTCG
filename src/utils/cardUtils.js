@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const UserCollection = require('../models/UserCollection');
 const { Card, CARD_TYPES } = require('../models/Card');
+const config = require('../config/config');
 
 const COMPOSITION_STYLES = [
     "Bird's Eye View",
@@ -103,7 +104,93 @@ async function addExperience(user, amount) {
     };
 }
 
+/**
+ * Get autocomplete suggestions for card names from a user's collection
+ * @param {string} userId - The Discord user ID
+ * @param {string} focusedValue - The current input value to match against
+ * @param {Object} options - Additional options for filtering
+ * @param {boolean} options.includeSpecial - Whether to include special cards (default: true)
+ * @param {boolean} options.includeFused - Whether to include fused cards (default: true)
+ * @param {string[]} options.rarities - Array of rarities to include (default: all)
+ * @param {string[]} options.types - Array of card types to include (default: all)
+ * @returns {Promise<Array<{name: string, value: string}>>} Array of matching card suggestions
+ */
+async function getCardAutocompleteSuggestions(userId, focusedValue, options = {}) {
+    try {
+        const {
+            includeSpecial = true,
+            includeFused = true,
+            rarities = [],
+            types = []
+        } = options;
+
+        // Get user's collection
+        const userCollection = await UserCollection.findOne({ userId })
+            .populate({
+                path: 'cards.cardId',
+                refPath: 'cards.cardType'
+            });
+
+        if (!userCollection) {
+            return [];
+        }
+
+        const focusedValueLower = focusedValue.toLowerCase();
+
+        // Filter cards based on the focused value and options
+        const matchingCards = userCollection.cards
+            .filter(card => {
+                if (!card.cardId || !card.cardId.name) return false;
+                
+                // Check rarity filter
+                if (rarities.length > 0 && !rarities.includes(card.cardId.rarity)) {
+                    return false;
+                }
+                
+                // Check type filter
+                if (types.length > 0 && !types.includes(card.cardId.type)) {
+                    return false;
+                }
+                
+                // Check if it's a special card and if we should include them
+                if (card.special && !includeSpecial) {
+                    return false;
+                }
+                
+                // Check if it's a fused card and if we should include them
+                if (card.cardType === 'FusedCard' && !includeFused) {
+                    return false;
+                }
+                
+                // Check name match
+                const cardName = card.cardId.name.toLowerCase();
+                const specialName = `${config.specialPrefix} ${cardName}`.toLowerCase();
+                
+                return cardName.includes(focusedValueLower) || 
+                       (card.special && specialName.includes(focusedValueLower));
+            })
+            .map(card => ({
+                name: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name,
+                value: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name
+            }))
+            // Remove duplicates
+            .filter((card, index, self) => 
+                index === self.findIndex(c => c.value === card.value)
+            )
+            // Sort alphabetically
+            .sort((a, b) => a.name.localeCompare(b.name))
+            // Limit to 25 choices (Discord's limit)
+            .slice(0, 25);
+
+        return matchingCards;
+    } catch (error) {
+        console.error('Error in getCardAutocompleteSuggestions:', error);
+        return [];
+    }
+}
+
 module.exports = {
     generateCardImage,
-    addExperience
+    addExperience,
+    getCardAutocompleteSuggestions
 }; 

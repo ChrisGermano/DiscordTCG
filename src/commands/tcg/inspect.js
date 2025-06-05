@@ -4,6 +4,7 @@ const UserCollection = require('../../models/UserCollection');
 const FusedCard = require('../../models/FusedCard');
 const { MessageEmbed } = require('discord.js');
 const { processCardImage } = require('../../utils/imageUtils');
+const { getCardAutocompleteSuggestions } = require('../../utils/cardUtils');
 const config = require('../../config/config');
 
 const data = new SlashCommandSubcommandBuilder()
@@ -17,42 +18,9 @@ const data = new SlashCommandSubcommandBuilder()
 
 async function autocomplete(interaction) {
     try {
-        const focusedValue = interaction.options.getFocused().toLowerCase();
-        const userId = interaction.user.id;
-
-        // Get user's collection
-        const userCollection = await UserCollection.findOne({ userId })
-            .populate({
-                path: 'cards.cardId',
-                refPath: 'cards.cardType'
-            });
-
-        if (!userCollection) {
-            return await interaction.respond([]);
-        }
-
-        // Filter cards based on the focused value
-        const matchingCards = userCollection.cards
-            .filter(card => 
-                card.cardId && 
-                card.cardId.name && 
-                (card.cardId.name.toLowerCase().includes(focusedValue) ||
-                (card.special && `${config.specialPrefix} ${card.cardId.name}`.toLowerCase().includes(focusedValue)))
-            )
-            .map(card => ({
-                name: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name,
-                value: card.special ? `${config.specialPrefix} ${card.cardId.name}` : card.cardId.name
-            }))
-            // Remove duplicates (in case user has multiple copies)
-            .filter((card, index, self) => 
-                index === self.findIndex(c => c.value === card.value)
-            )
-            // Sort alphabetically
-            .sort((a, b) => a.name.localeCompare(b.name))
-            // Limit to 25 choices (Discord's limit)
-            .slice(0, 25);
-
-        await interaction.respond(matchingCards);
+        const focusedValue = interaction.options.getFocused();
+        const suggestions = await getCardAutocompleteSuggestions(interaction.user.id, focusedValue);
+        await interaction.respond(suggestions);
     } catch (error) {
         console.error('Error in inspect command autocomplete:', error);
         await interaction.respond([]);

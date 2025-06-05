@@ -4,6 +4,7 @@ const Card = require('../../models/Card');
 const FusedCard = require('../../models/FusedCard');
 const config = require('../../config/config');
 const User = require('../../models/User');
+const { getCardAutocompleteSuggestions } = require('../../utils/cardUtils');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('tradeup')
@@ -11,7 +12,22 @@ const data = new SlashCommandSubcommandBuilder()
     .addStringOption(option =>
         option.setName('card')
             .setDescription('The name of the card to trade up')
-            .setRequired(true));
+            .setRequired(true)
+            .setAutocomplete(true));
+
+async function autocomplete(interaction) {
+    try {
+        const focusedValue = interaction.options.getFocused();
+        const suggestions = await getCardAutocompleteSuggestions(interaction.user.id, focusedValue, {
+            includeFused: false, // Don't allow trading up fused cards
+            rarities: ['common', 'uncommon', 'rare'] // Only allow trading up cards up to rare
+        });
+        await interaction.respond(suggestions);
+    } catch (error) {
+        console.error('Error in tradeup command autocomplete:', error);
+        await interaction.respond([]);
+    }
+}
 
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
@@ -148,5 +164,6 @@ async function execute(interaction) {
 
 module.exports = {
     data,
-    execute
+    execute,
+    autocomplete
 }; 

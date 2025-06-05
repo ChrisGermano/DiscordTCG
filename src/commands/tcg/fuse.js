@@ -8,7 +8,7 @@ const User = require('../../models/User');
 const fetch = require('node-fetch');
 const fs = require('fs').promises;
 const path = require('path');
-const { generateCardImage } = require('../../utils/cardUtils');
+const { generateCardImage, getCardAutocompleteSuggestions } = require('../../utils/cardUtils');
 
 function findLongestCommonEnding(str1, str2) {
     const words1 = str1.split(' ');
@@ -47,11 +47,26 @@ const data = new SlashCommandSubcommandBuilder()
     .addStringOption(option =>
         option.setName('card1')
             .setDescription('Name of the first card to fuse')
-            .setRequired(true))
+            .setRequired(true)
+            .setAutocomplete(true))
     .addStringOption(option =>
         option.setName('card2')
             .setDescription('Name of the second card to fuse')
-            .setRequired(true));
+            .setRequired(true)
+            .setAutocomplete(true));
+
+async function autocomplete(interaction) {
+    try {
+        const focusedValue = interaction.options.getFocused();
+        const suggestions = await getCardAutocompleteSuggestions(interaction.user.id, focusedValue, {
+            includeFused: false // Don't allow fusing already fused cards
+        });
+        await interaction.respond(suggestions);
+    } catch (error) {
+        console.error('Error in fuse command autocomplete:', error);
+        await interaction.respond([]);
+    }
+}
 
 async function checkFusion(card1, card2, userId) {
     console.log('Starting fusion check with cards:', {
@@ -381,4 +396,8 @@ function getRarityColor(rarity) {
     return colors[rarity] || 0x808080;
 }
 
-module.exports = { data, execute }; 
+module.exports = {
+    data,
+    execute,
+    autocomplete
+}; 

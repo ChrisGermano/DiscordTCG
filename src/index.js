@@ -28,6 +28,59 @@ client.once('ready', () => {
 
 // Interaction handling
 client.on('interactionCreate', async interaction => {
+    // Handle autocomplete interactions
+    if (interaction.isAutocomplete()) {
+        const command = client.commands.get(interaction.commandName);
+        if (!command) return;
+
+        try {
+            // Get the subcommand if it exists
+            const subcommand = interaction.options.getSubcommand(false);
+            let subcommandGroup = null;
+
+            try {
+                subcommandGroup = interaction.options.getSubcommandGroup(false);
+            } catch (error) {
+                // No subcommand group, which is fine
+            }
+
+            // Handle trade command group
+            if (subcommandGroup === 'trade') {
+                const tradeCommand = require('./commands/tcg/trade');
+                if (tradeCommand.autocomplete) {
+                    await tradeCommand.autocomplete(interaction);
+                }
+                return;
+            }
+
+            // Handle regular subcommands
+            const commandMap = {
+                'open': require('./commands/tcg/open'),
+                'showcollection': require('./commands/tcg/showcollection'),
+                'earn': require('./commands/tcg/earn'),
+                'tradeup': require('./commands/tcg/tradeup'),
+                'givecurrency': require('./commands/tcg/givecurrency'),
+                'givecard': require('./commands/tcg/givecard'),
+                'help': require('./commands/tcg/help'),
+                'view': require('./commands/tcg/view'),
+                'profile': require('./commands/tcg/profile'),
+                'fuse': require('./commands/tcg/fuse'),
+                'inspect': require('./commands/tcg/inspect'),
+                'battle': require('./commands/tcg/battle')
+            };
+
+            const subcommandHandler = commandMap[subcommand];
+            if (subcommandHandler && typeof subcommandHandler.autocomplete === 'function') {
+                await subcommandHandler.autocomplete(interaction);
+            }
+        } catch (error) {
+            console.error('Error handling autocomplete:', error);
+            await interaction.respond([]);
+        }
+        return;
+    }
+
+    // Handle regular commands
     if (!interaction.isCommand()) return;
 
     console.log(`Received command: ${interaction.commandName}`);

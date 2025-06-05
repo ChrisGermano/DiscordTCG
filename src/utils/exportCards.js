@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const Card = require('../models/Card');
+const { Card } = require('../models/Card');
 const FusedCard = require('../models/FusedCard');
 
 /**

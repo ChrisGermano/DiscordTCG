@@ -1,6 +1,7 @@
 const { SlashCommandSubcommandBuilder } = require('@discordjs/builders');
 const UserCollection = require('../../models/UserCollection');
 const { Card, TYPE_STRENGTHS } = require('../../models/Card');
+const { getCardAutocompleteSuggestions } = require('../../utils/cardUtils');
 
 const data = new SlashCommandSubcommandBuilder()
     .setName('battle')
@@ -8,7 +9,8 @@ const data = new SlashCommandSubcommandBuilder()
     .addStringOption(option =>
         option.setName('card')
             .setDescription('The card you want to use in battle')
-            .setRequired(true))
+            .setRequired(true)
+            .setAutocomplete(true))
     .addStringOption(option =>
         option.setName('difficulty')
             .setDescription('The difficulty level of the battle')
@@ -452,7 +454,19 @@ async function execute(interaction) {
     }
 }
 
+async function autocomplete(interaction) {
+    try {
+        const focusedValue = interaction.options.getFocused();
+        const suggestions = await getCardAutocompleteSuggestions(interaction.user.id, focusedValue);
+        await interaction.respond(suggestions);
+    } catch (error) {
+        console.error('Error in battle command autocomplete:', error);
+        await interaction.respond([]);
+    }
+}
+
 module.exports = {
     data,
-    execute
+    execute,
+    autocomplete
 }; 
