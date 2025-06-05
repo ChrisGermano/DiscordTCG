@@ -9,11 +9,42 @@ const data = new SlashCommandSubcommandBuilder()
     .addStringOption(option =>
         option.setName('card')
             .setDescription('The name of the card to give')
-            .setRequired(true))
+            .setRequired(true)
+            .setAutocomplete(true))
     .addUserOption(option =>
         option.setName('user')
             .setDescription('The user to give the card to')
             .setRequired(true));
+
+async function autocomplete(interaction) {
+    try {
+        // Check if user is admin
+        if (interaction.user.id !== config.adminUserId) {
+            return await interaction.respond([]);
+        }
+
+        const focusedValue = interaction.options.getFocused().toLowerCase();
+        
+        // Get all cards from the database
+        const cards = await Card.find({
+            name: { $regex: focusedValue, $options: 'i' }
+        })
+        .limit(25)
+        .select('name rarity')
+        .lean();
+
+        // Format suggestions for Discord
+        const suggestions = cards.map(card => ({
+            name: `${card.name} (${card.rarity})`,
+            value: card.name
+        }));
+
+        await interaction.respond(suggestions);
+    } catch (error) {
+        console.error('Error in givecard autocomplete:', error);
+        await interaction.respond([]);
+    }
+}
 
 async function execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
@@ -89,5 +120,6 @@ async function execute(interaction) {
 
 module.exports = {
     data,
-    execute
+    execute,
+    autocomplete
 }; 
